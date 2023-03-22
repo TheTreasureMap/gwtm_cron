@@ -18,7 +18,7 @@ def test_local_file_ingestion():
         pw = os.path.join(os.getcwd(), f)
         listener.local_run(
             alert_json_path=pw,
-            dry_run=False, 
+            dry_run=True,
             write_to_s3=False
         )
 

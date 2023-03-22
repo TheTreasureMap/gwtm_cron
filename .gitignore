@@ -1,4 +1,5 @@
 env.sh
+*pycache*
 tests/listener_tests/contours
 tests/listener_tests/saved_alerts
 tests/listener_tests/skymaps

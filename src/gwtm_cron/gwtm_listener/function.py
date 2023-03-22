@@ -23,7 +23,6 @@ from . import config
 
     
 def query_gwtm_alerts(graceid, alert_type, config: config.Config):
-    #HACK Read from environment variables
     base = config.API_BASE
     target = "query_alerts"
     params = {
@@ -36,6 +35,7 @@ def query_gwtm_alerts(graceid, alert_type, config: config.Config):
         return json.loads(r.text)
     else:
         raise Exception(f"Bad api request: f{r.text}")
+
 
 def post_gwtm_alert(gwa, config: config.Config):
     base = config.API_BASE

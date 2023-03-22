@@ -1,0 +1,10 @@
+numpy
+astropy_healpix
+gcn_kafka
+ephem
+bs4
+shapely
+ligo.skymap
+boto3
+mocpy
+lxml

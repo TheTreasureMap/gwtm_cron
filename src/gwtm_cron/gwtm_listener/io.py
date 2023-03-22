@@ -28,7 +28,7 @@ class Writer():
 
         self.write_to_s3 = write_to_s3
         self.s3path = s3path
-        
+
         if isinstance(alert, bytes):
             alert = alert.decode('utf-8')
         self.alert = alert
@@ -188,15 +188,15 @@ class Writer():
             print('Calculating LAT contours')
 
         tos = datetime.datetime.strptime(self.gwalert_dict["time_of_signal"], "%Y-%m-%dT%H:%M:%S.%f")
-        try:
-            ra, dec = function.getFermiPointing(tos)
-            pointing_footprint= function.makeLATFoV(ra,dec)
-            skycoord = SkyCoord(pointing_footprint, unit="deg", frame="icrs")
-            moc = MOC.from_polygon_skycoord(skycoord, max_depth=9)
-            mocfootprint = moc.serialize(format='json')
-            moc_string = json.dumps(mocfootprint)
-        except:
-            print('ERROR in LAT MOC creation for {}'.format(self.gwalert_dict["graceid"]))
+        #try:
+        ra, dec = function.getFermiPointing(tos)
+        pointing_footprint= function.makeLATFoV(ra,dec)
+        skycoord = SkyCoord(pointing_footprint, unit="deg", frame="icrs")
+        moc = MOC.from_polygon_skycoord(skycoord, max_depth=9)
+        mocfootprint = moc.serialize(format='json')
+        moc_string = json.dumps(mocfootprint)
+        #except:
+        #    print('ERROR in LAT MOC creation for {}'.format(self.gwalert_dict["graceid"]))
 
         
         if self.write_to_s3:
@@ -255,3 +255,25 @@ class Writer():
             with open(local_file_path, 'wb') as f:
                 f.write(self.alert.encode())
 
+class Reader():
+
+    def __init__(self, read_from_s3=True):
+        self.read_from_s3 = read_from_s3
+        self.s3 = boto3.client('s3')
+
+    def read_alert_json(self, alert_path_name, config: config.Config, verbose=False):
+        '''
+            function that reads the alert json or local directory
+        '''
+        if self.read_from_s3:
+            if verbose:
+                print('Reading alert json from s3')
+            try:
+                self.s3.head_object(Bucket=config.AWS_BUCKET, Key=alert_path_name)
+                with io.BytesIO() as f:
+                    self.s3.download_fileobj(config.AWS_BUCKET, alert_path_name, f)
+                    f.seek(0)
+                    data = json.loads(f.read().decode('utf-8'))
+                return data
+            except:
+                print('Error in s3 download, file might not exist')
