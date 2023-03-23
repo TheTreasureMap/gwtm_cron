@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  worker:
+    build: .
+    command: python src/gwtm_cron/gwtm_listener/listener.py 
+    environment:
+      - AWS_ACCESS_KEY_ID
+      - AWS_SECRET_ACCESS_KEY
+      - AWS_DEFAULT_REGION
+      - AWS_BUCKET
+      - API_TOKEN
+      - API_BASE
+      - ALERT_DOMAIN
+      - OBSERVING_RUN
+      - KAFKA_CLIENT_ID
+      - KAFKA_CLIENT_SECRET

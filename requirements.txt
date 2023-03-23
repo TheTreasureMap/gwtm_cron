@@ -8,3 +8,4 @@ ligo.skymap
 boto3
 mocpy
 lxml
+werkzeug

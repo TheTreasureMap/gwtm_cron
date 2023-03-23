@@ -9,9 +9,15 @@ from io import BytesIO
 from astropy.table import Table
 from gcn_kafka import Consumer
 
-from . import config
-from . import function
-from . import io
+try:
+    from . import gw_config as config
+    from . import gw_function as function
+    from . import gw_io as io
+except:
+    import gw_config as config
+    import gw_function as function
+    import gw_io as io
+
 
 class Listener():
 
@@ -162,3 +168,8 @@ class Listener():
             alert = self._listen(alert=record, write_to_s3=write_to_s3, verbose=verbose, dry_run=dry_run)
             if verbose:
                 print(alert)
+
+
+if __name__ == '__main__':
+    l = Listener()
+    l.run(write_to_s3=True, verbose=True, dry_run=False)
