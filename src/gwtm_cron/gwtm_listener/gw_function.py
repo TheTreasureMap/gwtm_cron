@@ -62,7 +62,7 @@ def del_test_alerts(config: config.Config):
     }
     r = requests.post(f"{base}{target}", json=params)
     if r.status_code == 200:
-        return json.loads(r.text)
+        return r
     else:
         raise Exception(f"Bad api request: f{r.text}")
 
