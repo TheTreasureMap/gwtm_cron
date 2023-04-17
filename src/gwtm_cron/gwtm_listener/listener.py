@@ -38,7 +38,7 @@ class Listener():
         record = json.loads(alert)
 
         run_test = True
-        if record['superevent_id'][0] != 'M':
+        if record['superevent_id'][0:2] != 'MS':
             run_test = False
 
         s3path = 'test' if run_test else 'fit'
@@ -142,6 +142,9 @@ class Listener():
 
         if not dry_run:
             gwa = function.post_gwtm_alert(gwa, config=self.config)
+        
+        if run_test:
+            function.del_test_alerts(config=self.config)
 
         return gwa
 

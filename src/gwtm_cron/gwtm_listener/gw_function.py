@@ -53,6 +53,19 @@ def post_gwtm_alert(gwa, config: config.Config):
     else:
         raise Exception(f"Bad api request: f{r.text}")
 
+ 
+def del_test_alerts(config: config.Config):
+    base = config.API_BASE
+    target = "del_test_alerts"
+    params = {
+        'api_token':config.API_TOKEN
+    }
+    r = requests.post(f"{base}{target}", json=params)
+    if r.status_code == 200:
+        return json.loads(r.text)
+    else:
+        raise Exception(f"Bad api request: f{r.text}")
+
 
 def get_packet_type(alert_type):
     if alert_type in ['Early_Warning', 'EARLY_WARNING', 'early_warning', 'EarlyWarning', 'EARLYWARNING', 'earlywarning']:
