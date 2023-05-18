@@ -1,0 +1,1 @@
+* * * * * /home/azureuser/anaconda3/envs/gwtm_listener/bin/python /home/azureuser/cron/listener_check.py >> /home/azureuser/cron/listener_check.log 2>&1
