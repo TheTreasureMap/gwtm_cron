@@ -6,7 +6,7 @@ import ligo.skymap
 import ligo.skymap.io
 import ligo.skymap.postprocess
 import tempfile
-import boto3
+from . import gwstorage
 
 from ligo.skymap.healpix_tree import interpolate_nested
 from astropy.coordinates import SkyCoord
@@ -40,7 +40,6 @@ class Writer():
         self.skymap = None
         self.path_info = None
         self.gwalert_dict = None
-        self.s3 = boto3.client('s3')
 
         if not write_to_s3:
             paths = [
@@ -79,11 +78,7 @@ class Writer():
             if verbose:
                 print('Writing skymap.fits.gz to s3')
             downloadpath = '{}/{}.fits.gz'.format(self.s3path, self.path_info)
-            with io.BytesIO() as f:
-                f.write(self.skymap)
-
-                f.seek(0)
-                self.s3.upload_fileobj(f, Bucket=config.AWS_BUCKET, Key=downloadpath)
+            gwstorage.upload_gwtm_file(self.skymap, downloadpath, source=config.STORAGE_BUCKET_SOURCE, config=config)
         else:
             if verbose:
                 print('Writing skymap.fits.gz to local')
@@ -131,10 +126,7 @@ class Writer():
                 print('Writing contours to s3')
 
             contour_download_path = '{}/{}-contours-smooth.json'.format(self.s3path, self.path_info)
-            with io.BytesIO() as cc:
-                cc.write(contours_json.encode())
-                cc.seek(0)
-                self.s3.upload_fileobj(cc, Bucket=config.AWS_BUCKET, Key=contour_download_path)
+            gwstorage.upload_gwtm_file(contours_json.encode(), contour_download_path, config.STORAGE_BUCKET_SOURCE, config)
         else:
             if verbose:
                 print('Writing contours to local')
@@ -145,7 +137,6 @@ class Writer():
 
 
     def _write_fermi(self, config: config.Config, verbose=False):
-        #create
         if verbose:
             print('Calculating Fermi contour map')
 
@@ -163,14 +154,9 @@ class Writer():
             if verbose:
                 print('Writing Fermi contour to s3')
             fermi_moc_upload_path = '{}/{}-Fermi.json'.format(self.s3path, self.gwalert_dict["graceid"])
-            try:
-                self.s3.head_object(Bucket=config.AWS_BUCKET, Key=fermi_moc_upload_path)
-                print('Fermi file already exists')
-            except:
-                with io.BytesIO() as mm:
-                    mm.write(moc_string.encode())
-                    mm.seek(0)
-                    self.s3.upload_fileobj(mm, Bucket=config.AWS_BUCKET, Key=fermi_moc_upload_path)
+            dir_contents = gwstorage.list_gwtm_bucket(self.s3path, config.STORAGE_BUCKET_SOURCE, config)
+            if fermi_moc_upload_path not in dir_contents:
+                gwstorage.upload_gwtm_file(moc_string.encode(), fermi_moc_upload_path, config.STORAGE_BUCKET_SOURCE, config)
 
         else:
             local_write_file = os.path.join(os.getcwd(), "contours", f"{self.gwalert_dict['graceid']}-Fermi.json")
@@ -192,31 +178,21 @@ class Writer():
             print('Calculating LAT contours')
 
         tos = datetime.datetime.strptime(self.gwalert_dict["time_of_signal"], "%Y-%m-%dT%H:%M:%S.%f")
-        #try:
         ra, dec = function.getFermiPointing(tos)
         pointing_footprint= function.makeLATFoV(ra,dec)
         skycoord = SkyCoord(pointing_footprint, unit="deg", frame="icrs")
         moc = MOC.from_polygon_skycoord(skycoord, max_depth=9)
         mocfootprint = moc.serialize(format='json')
         moc_string = json.dumps(mocfootprint)
-        #except:
-        #    print('ERROR in LAT MOC creation for {}'.format(self.gwalert_dict["graceid"]))
 
-        
         if self.write_to_s3:
             if verbose:
                 print('Writing LAT contour to s3')
 
             lat_moc_upload_path = '{}/{}-LAT.json'.format(self.s3path, self.gwalert_dict["graceid"])
-            try:
-                self.s3.head_object(Bucket=config.AWS_BUCKET, Key=lat_moc_upload_path)
-                print('LAT file already exists')
-            except:
-                with io.BytesIO() as ll:
-                    ll.write(moc_string.encode())
-                    ll.seek(0)
-                    self.s3.upload_fileobj(ll, Bucket=config.AWS_BUCKET, Key=lat_moc_upload_path)
-                    print('Successfully Created LAT MOC File for {}'.format(self.gwalert_dict["graceid"]))
+            dir_contents = gwstorage.list_gwtm_bucket(self.s3path, config.STORAGE_BUCKET_SOURCE, config)
+            if lat_moc_upload_path not in dir_contents:
+                gwstorage.upload_gwtm_file(moc_string.encode(), lat_moc_upload_path, config.STORAGE_BUCKET_SOURCE, config)
         
         else:
             local_write_file = os.path.join(os.getcwd(), "contours", f"{self.gwalert_dict['graceid']}-LAT.json")
@@ -243,14 +219,9 @@ class Writer():
                 print("Writing alert json to s3")
 
             alert_upload_path = os.path.join(self.s3path, f"{self.path_info}_alert.json")
-            try:
-                self.s3.head_object(Bucket=config.AWS_BUCKET, Key=alert_upload_path)
-                print('Alert file already exists')
-            except:
-                with io.BytesIO() as ll:
-                    ll.write(self.alert.encode())
-                    ll.seek(0)
-                    self.s3.upload_fileobj(ll, Bucket=config.AWS_BUCKET, Key=alert_upload_path)
+            dir_contents = gwstorage.list_gwtm_bucket(self.s3path, config.STORAGE_BUCKET_SOURCE, config)
+            if alert_upload_path not in dir_contents:
+                gwstorage.upload_gwtm_file(self.alert.encode(), alert_upload_path, config.STORAGE_BUCKET_SOURCE, config)
         else:
             if verbose:
                 print("Writing alert json to local")
@@ -263,7 +234,6 @@ class Reader():
 
     def __init__(self, read_from_s3=True):
         self.read_from_s3 = read_from_s3
-        self.s3 = boto3.client('s3')
 
     def read_alert_json(self, alert_path_name, config: config.Config, verbose=False):
         '''
@@ -273,11 +243,8 @@ class Reader():
             if verbose:
                 print('Reading alert json from s3')
             try:
-                self.s3.head_object(Bucket=config.AWS_BUCKET, Key=alert_path_name)
-                with io.BytesIO() as f:
-                    self.s3.download_fileobj(config.AWS_BUCKET, alert_path_name, f)
-                    f.seek(0)
-                    data = json.loads(f.read().decode('utf-8'))
+                f = gwstorage.download_gwtm_file(alert_path_name, config.STORAGE_BUCKET_SOURCE, config)
+                data = json.loads(f)
                 return data
             except:
                 print('Error in s3 download, file might not exist')

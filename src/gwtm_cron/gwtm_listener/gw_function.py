@@ -47,6 +47,7 @@ def post_gwtm_alert(gwa, config: config.Config):
     params.update({
         'api_token' : config.API_TOKEN
     })
+    print(base, target)
     r = requests.post(f"{base}{target}", json=params)
     if r.status_code == 200:
         return json.loads(r.text)

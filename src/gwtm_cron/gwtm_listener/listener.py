@@ -1,5 +1,6 @@
 import json
 import datetime
+import os
 
 import numpy as np
 import astropy_healpix as ah
@@ -22,7 +23,11 @@ except:
 class Listener():
 
     def __init__(self):
-        self.config = config.Config()
+
+        home = os.path.expanduser("~")
+        conf_path = "/cron/listener_config.json"
+
+        self.config = config.Config(path_to_config=f"{home}{conf_path}")
         self.consumer = Consumer(
             client_id=self.config.KAFKA_CLIENT_ID,
             client_secret=self.config.KAFKA_CLIENT_SECRET
