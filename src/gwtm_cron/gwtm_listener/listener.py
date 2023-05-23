@@ -24,7 +24,7 @@ class Listener():
 
     def __init__(self):
 
-        home = os.path.expanduser("~")
+        home = "/home/azureuser"
         conf_path = "/cron/listener_config.json"
 
         self.config = config.Config(path_to_config=f"{home}{conf_path}")
