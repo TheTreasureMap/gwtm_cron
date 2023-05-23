@@ -132,7 +132,7 @@ class Listener():
                 header = skymap.meta
                 header_keys = header.keys()
                 gwa.update({
-                    "skymap_fits_url" : "internally read",
+                    "skymap_fits_url" : f"https://gracedb.ligo.org/api/superevents/{gwa['graceid']}/files/bayestar.fits.gz",
                     "avgra"           : ra.deg,
                     "avgdec"          : dec.deg,
                     "time_of_signal"  : header['DATE-OBS'] if 'DATE-OBS' in header_keys else '1991-12-23T19:15:00',
@@ -148,8 +148,8 @@ class Listener():
         if not dry_run:
             gwa = function.post_gwtm_alert(gwa, config=self.config)
         
-        if run_test:
-            function.del_test_alerts(config=self.config)
+        #if run_test:
+        #    function.del_test_alerts(config=self.config)
 
         return gwa
 

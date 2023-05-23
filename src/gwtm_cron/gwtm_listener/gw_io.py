@@ -6,6 +6,7 @@ import ligo.skymap
 import ligo.skymap.io
 import ligo.skymap.postprocess
 import tempfile
+import requests
 from . import gwstorage
 
 from ligo.skymap.healpix_tree import interpolate_nested
@@ -67,22 +68,46 @@ class Writer():
 
     def process(self, config: config.Config, verbose=False):
         self._write_skymap(config=config, verbose=verbose)
+        self._write_skymap_moc(config=config, verbose=verbose)
         self._write_contours(config=config, verbose=verbose)
         self._write_fermi(config=config, verbose=verbose)
         self._write_LAT(config=config, verbose=verbose)
 
 
     def _write_skymap(self, config: config.Config, verbose=False):
+        if verbose:
+            print('Downloading skymap_fits_url')
 
+        try:
+            r = requests.get(self.gwalert_dict['skymap_fits_url'])
+        except:
+            print("Bad skymap URL! Gracedb might be bogged")
+            return
+        
         if self.write_to_s3:
             if verbose:
                 print('Writing skymap.fits.gz to s3')
             downloadpath = '{}/{}.fits.gz'.format(self.s3path, self.path_info)
-            gwstorage.upload_gwtm_file(self.skymap, downloadpath, source=config.STORAGE_BUCKET_SOURCE, config=config)
+            gwstorage.upload_gwtm_file(r.content, downloadpath, source=config.STORAGE_BUCKET_SOURCE, config=config)
         else:
             if verbose:
                 print('Writing skymap.fits.gz to local')
             local_write_path = os.path.join(os.getcwd(), 'skymaps', f"{self.path_info}.fits.gz")
+            with open(local_write_path, 'wb') as f:
+                f.write(r.content)
+
+
+    def _write_skymap_moc(self, config: config.Config, verbose=False):
+
+        if self.write_to_s3:
+            if verbose:
+                print('Writing skymap_moc.fits.gz to s3')
+            downloadpath = '{}/{}_moc.fits.gz'.format(self.s3path, self.path_info)
+            gwstorage.upload_gwtm_file(self.skymap, downloadpath, source=config.STORAGE_BUCKET_SOURCE, config=config)
+        else:
+            if verbose:
+                print('Writing skymap_moc.fits.gz to local')
+            local_write_path = os.path.join(os.getcwd(), 'skymaps', f"{self.path_info}_moc.fits.gz")
             with open(local_write_path, 'wb') as f:
                 f.write(self.skymap)
 
