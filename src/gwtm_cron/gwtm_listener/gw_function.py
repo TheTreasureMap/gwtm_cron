@@ -9,6 +9,7 @@ import json
 
 import numpy as np
 import astropy.io.fits as fits
+import astropy_healpix as ah
 
 from bs4 import BeautifulSoup
 from shapely.geometry import Polygon
@@ -70,7 +71,7 @@ def del_test_alerts(config: config.Config):
 
 def get_packet_type(alert_type):
     if alert_type in ['Early_Warning', 'EARLY_WARNING', 'early_warning', 'EarlyWarning', 'EARLYWARNING', 'earlywarning']:
-        return 'Early_Warning', 153 #Check?
+        return 'EarlyWarning', 153 #Check?
     if alert_type in ['Initial', 'INITIAL', 'initial']:
         return "Initial", 151
     if alert_type in ['Preliminary', 'PRELIMINARY', 'preliminary']:
@@ -79,8 +80,33 @@ def get_packet_type(alert_type):
         return "Update", 152
     if alert_type in ['Retraction', 'RETRACTION', 'retraction']:
         return "Retraction", 164
+    if 'ExtCoinc' in alert_type:
+        return alert_type, 666 #DO NOT CHECK
     
     return "Error", 0
+
+
+def get_skymap_avg_pos(skymap):
+    level, ipix = ah.uniq_to_level_ipix(
+        skymap[np.argmax(skymap['PROBDENSITY'])]['UNIQ']
+    )
+    ra, dec = ah.healpix_to_lonlat(ipix, ah.level_to_nside(level), order='nested')
+    return ra, dec
+
+def get_skymap_90_50_area(skymap):
+    skymap.sort('PROBDENSITY', reverse=True)
+    level, ipix = ah.uniq_to_level_ipix(skymap['UNIQ'])
+    pixel_area = ah.nside_to_pixel_area(ah.level_to_nside(level))
+    prob = pixel_area * skymap['PROBDENSITY']
+    cumprob = np.cumsum(prob)
+
+    i_90 = cumprob.searchsorted(0.9)
+    i_50 = cumprob.searchsorted(0.5)
+    area_90 = pixel_area[:i_90].sum()
+    area_50 = pixel_area[:i_50].sum()
+    
+    return area_90, area_50
+
 
 
 def ra_dec_to_uvec(ra, dec):

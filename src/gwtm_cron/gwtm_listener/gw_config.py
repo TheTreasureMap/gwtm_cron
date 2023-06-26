@@ -4,6 +4,7 @@ import json
 class Config(object):
 
     def __init__(self, path_to_config=None):
+        print(path_to_config)
         if path_to_config and os.path.exists(path_to_config):
 
             fi = open(path_to_config)
@@ -15,7 +16,7 @@ class Config(object):
             self.AWS_BUCKET = data["AWS_BUCKET"] if "AWS_BUCKET" in data.keys() else "gwtreasuremap"
             self.AZURE_ACCOUNT_NAME = data["AZURE_ACCOUNT_NAME"] if "AZURE_ACCOUNT_NAME" in data.keys() else ""
             self.AZURE_ACCOUNT_KEY = data["AZURE_ACCOUNT_KEY"] if "AZURE_ACCOUNT_KEY" in data.keys() else "" 
-            self.STORAGE_BUCKET_SOURCE = data["STORAGE_BUCKET_SOURCE"] if "STORAGE_BUCKET_SOURCE" in data.keys() else "s3"
+            self.STORAGE_BUCKET_SOURCE = data["STORAGE_BUCKET_SOURCE"] if "STORAGE_BUCKET_SOURCE" in data.keys() else "abfs"
             self.API_TOKEN = data["API_TOKEN"] if "API_TOKEN" in data.keys() else ""
             self.API_BASE = data["API_BASE"] if "API_BASE" in data.keys() else "http://127.0.0.1:5000/api/v0/"
             self.ALERT_DOMAIN = data["ALERT_DOMAIN"] if "ALERT_DOMAIN" in data.keys() else "igwn.gwalert"
@@ -29,7 +30,7 @@ class Config(object):
             self.AWS_BUCKET = os.environ.get('AWS_BUCKET', 'gwtreasuremap')
             self.AZURE_ACCOUNT_NAME = os.environ.get('AZURE_ACCOUNT_NAME', '')
             self.AZURE_ACCOUNT_KEY = os.environ.get('AZURE_ACCOUNT_KEY', '')
-            self.STORAGE_BUCKET_SOURCE = os.environ.get('STORAGE_BUCKET_SOURCE', 's3')
+            self.STORAGE_BUCKET_SOURCE = os.environ.get('STORAGE_BUCKET_SOURCE', 'abfs')
             self.API_TOKEN = os.environ.get('API_TOKEN', '')
             self.API_BASE = os.environ.get('API_BASE', 'http://127.0.0.1:5000/api/v0/')
             self.ALERT_DOMAIN = os.environ.get('ALERT_DOMAIN', 'igwn.gwalert')

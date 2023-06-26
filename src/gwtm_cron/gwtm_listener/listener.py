@@ -1,6 +1,6 @@
 import json
 import datetime
-import os
+import requests
 
 import numpy as np
 import astropy_healpix as ah
@@ -9,6 +9,7 @@ from base64 import b64decode
 from io import BytesIO
 from astropy.table import Table
 from gcn_kafka import Consumer
+from astropy import units as u
 
 try:
     from . import gw_config as config
@@ -25,6 +26,7 @@ class Listener():
     def __init__(self):
 
         home = "/home/azureuser"
+        home = "/Users/crisp"
         conf_path = "/cron/listener_config.json"
 
         self.config = config.Config(path_to_config=f"{home}{conf_path}")
@@ -38,7 +40,7 @@ class Listener():
         ])
 
 
-    def _listen(self, alert, write_to_s3=True, verbose=False, dry_run=False):
+    def _listen(self, alert, write_to_s3=True, verbose=False, dry_run=False, alertname=None):
 
         record = json.loads(alert)
 
@@ -56,6 +58,7 @@ class Listener():
         )
 
         gwa = {}
+        ext_gwa = None
 
         alert_keys = record.keys()
         gwa.update({
@@ -69,12 +72,15 @@ class Listener():
 
         gwa["alert_type"], gwa["packet_type"] = function.get_packet_type(gwa["alert_type"])
 
-        path_info = gwa["graceid"] + '-' + gwa["alert_type"]
+        if alertname is None:
+            path_info = gwa["graceid"] + '-' + gwa["alert_type"]
 
-        alertinfo = function.query_gwtm_alerts(gwa['graceid'], gwa['alert_type'], config=self.config)
+            alertinfo = function.query_gwtm_alerts(gwa['graceid'], gwa['alert_type'], config=self.config)
 
-        if len(alertinfo) > 0:
-            path_info = path_info + str(len(alertinfo))
+            if len(alertinfo) > 0:
+                path_info = path_info + str(len(alertinfo))
+        else:
+            path_info = alertname
 
         writer.set_path_info(path_info=path_info)
         writer.write_alert_json(self.config, verbose=verbose)
@@ -87,6 +93,8 @@ class Listener():
                 "group"             : record_event["group"] if "group" in event_keys else "",
                 "pipeline"          : record_event["pipeline"] if "pipeline" in event_keys else "",
                 "search"            : record_event["search"] if "search" in event_keys else "",
+                "central_freq"      : record_event["central_frequency"] if "central_frequency" in event_keys else 0.0,
+                "duration"          : record_event["duration"] if "duration" in event_keys else 0.0
             })
 
             if "instruments" in event_keys:
@@ -116,7 +124,6 @@ class Listener():
                     "prob_nsbh"        : record_event_class["NSBH"] if "NSBH" in class_keys else 0.0,
                     "prob_bbh"         : record_event_class["BBH"] if "BBH" in class_keys else 0.0,
                     "prob_terrestrial" : record_event_class["Terrestrial"] if "Terrestrial" in class_keys else 0.0
-
                 })
 
             if "skymap" in event_keys:
@@ -124,17 +131,30 @@ class Listener():
                 skymap_bytes = b64decode(skymap_str)
                 skymap = Table.read(BytesIO(skymap_bytes))
 
-                level, ipix = ah.uniq_to_level_ipix(
-                    skymap[np.argmax(skymap['PROBDENSITY'])]['UNIQ']
-                )
-                ra, dec = ah.healpix_to_lonlat(ipix, ah.level_to_nside(level), order='nested')
+                ra, dec = function.get_skymap_avg_pos(skymap)
+                area_90, area_50 = function.get_skymap_90_50_area(skymap)
 
                 header = skymap.meta
                 header_keys = header.keys()
+
+                #This is dumb
+                skymap_url = None
+                map_files = ["cWB.fits.gz", "bilby.fits.gz", "bayestar.fits.gz"]
+                for mf in map_files:
+                    mf_url = f"https://gracedb.ligo.org/api/superevents/{gwa['graceid']}/files/{mf}"
+                    mf_r = requests.head(mf_url)
+                    if mf_r.status_code == 200:
+                        skymap_url = mf_r
+                        break
+                if skymap_url is None:
+                    skymap_url = "Invalid.Sky.Map.URL"
+
                 gwa.update({
-                    "skymap_fits_url" : f"https://gracedb.ligo.org/api/superevents/{gwa['graceid']}/files/bayestar.fits.gz",
+                    "skymap_fits_url" : skymap_url,
                     "avgra"           : ra.deg,
                     "avgdec"          : dec.deg,
+                    "area_90"         : area_90.to_value(u.deg**2),
+                    "area_50"         : area_50.to_value(u.deg**2),
                     "time_of_signal"  : header['DATE-OBS'] if 'DATE-OBS' in header_keys else '1991-12-23T19:15:00',
                     "distance"        : header['DISTMEAN'] if 'DISTMEAN' in header_keys else "-999.9",
                     "distance_error"  : header['DISTSTD'] if 'DISTSTD' in header_keys else "-999.9",
@@ -144,14 +164,73 @@ class Listener():
                 writer.set_gwalert_dict(gwa)
                 writer.set_skymap(skymap_bytes)
                 writer.process(config=self.config, verbose=verbose)
+            
+        if "external_coinc" in alert_keys and record["external_coinc"] is not None:
+            ext_coin = record["external_coinc"]
+            ext_coin_keys = ext_coin.keys()
+            ext_gwa = gwa.copy()
+
+            ext_gwa.update({
+                    "alert_type"        : f"{gwa['alert_type']}-ExtCoinc",
+            })
+
+            ext_gwa["alert_type"], ext_gwa["packet_type"] = function.get_packet_type(ext_gwa["alert_type"])
+
+            ext_path_info = ext_gwa["graceid"] + '-' + ext_gwa["alert_type"]
+
+            ext_alertinfo = function.query_gwtm_alerts(ext_gwa['graceid'], ext_gwa['alert_type'], config=self.config)
+
+            if len(ext_alertinfo) > 0:
+                ext_path_info = ext_path_info + str(len(ext_alertinfo))
+
+            writer.set_path_info(path_info=ext_path_info)
+
+            ext_gwa.update({
+                "gcn_notice_id"       : ext_coin["gcn_notice_id"] if "gcn_notice_id" in ext_coin_keys else -999,
+                "ivorn"               : ext_coin["ivorn"] if "ivorn" in ext_coin_keys else "",
+                "ext_coinc_observatory"         : ext_coin["observatory"] if "observatory" in ext_coin_keys else "",
+                "ext_coinc_search"              : ext_coin["search"] if "search" in ext_coin_keys else "",
+                "time_difference"                   : ext_coin["time_difference"] if "time_difference" in ext_coin_keys else -999.9,
+                "time_coincidence_far"              : ext_coin["time_coincidence_far"] if "time_coincidence_far" in ext_coin_keys else -999.9,
+                "time_sky_position_coincidence_far" : ext_coin["time_sky_position_coincidence_far"] if "time_sky_position_coincidence_far" in ext_coin_keys else -999.9
+            })
+
+            if "combined_skymap" in ext_coin_keys:
+                
+                combined_skymap_str = ext_coin["combined_skymap"]
+                combined_skymap_bytes = b64decode(combined_skymap_str)
+                combined_skymap = Table.read(BytesIO(combined_skymap_bytes))
+
+                ext_ra, ext_dec = function.get_skymap_avg_pos(combined_skymap)
+                ext_area_90, ext_area_50 = function.get_skymap_90_50_area(combined_skymap)
+
+                combined_header = combined_skymap.meta
+                comb_header_keys = combined_header.keys()
+                ext_gwa.update({
+                    "avgra"           : ext_ra.deg,
+                    "avgdec"          : ext_dec.deg,
+                    "area_90"         : ext_area_90.to_value(u.deg**2),
+                    "area_50"         : ext_area_50.to_value(u.deg**2),
+                    "time_of_signal"  : combined_header['DATE-OBS'] if 'DATE-OBS' in comb_header_keys else '1991-12-23T19:15:00',
+                    "distance"        : combined_header['DISTMEAN'] if 'DISTMEAN' in comb_header_keys else "-999.9",
+                    "distance_error"  : combined_header['DISTSTD'] if 'DISTSTD' in comb_header_keys else "-999.9",
+                    "timesent"        : combined_header['DATE'] if 'DATE' in comb_header_keys else '1991-12-23T19:15:00',
+                })
+
+                writer.set_gwalert_dict(ext_gwa)
+                writer.set_skymap(combined_skymap_bytes)
+                writer.process_external_coinc(config=self.config, verbose=verbose)
 
         if not dry_run:
             gwa = function.post_gwtm_alert(gwa, config=self.config)
+            if ext_gwa is not None:
+                print(ext_gwa)
+                ext_gwa = function.post_gwtm_alert(ext_gwa, config=self.config)
         
-        #if run_test:
-        #    function.del_test_alerts(config=self.config)
+        if run_test:
+            function.del_test_alerts(config=self.config)
 
-        return gwa
+        return gwa, ext_gwa
 
 
     def run(self, write_to_s3=True, verbose=False, dry_run=False):
@@ -160,7 +239,7 @@ class Listener():
 
         while True:
             for message in self.consumer.consume(timeout=1):
-                alert = self._listen(
+                alert, ext_alert = self._listen(
                     alert=message.value(), 
                     write_to_s3=write_to_s3,
                     verbose=verbose,
@@ -168,14 +247,20 @@ class Listener():
                 )
                 if verbose:
                     print(alert)
+                    if ext_alert:
+                        print()
+                        print(ext_alert)
 
 
-    def local_run(self, alert_json_path: str, write_to_s3=False, verbose=True, dry_run=True):
+    def local_run(self, alert_json_path: str, write_to_s3=False, verbose=True, dry_run=True, alertname=None):
         with open(alert_json_path, 'r') as f:
             record = f.read()
-            alert = self._listen(alert=record, write_to_s3=write_to_s3, verbose=verbose, dry_run=dry_run)
+            alert, ext_alert = self._listen(alert=record, write_to_s3=write_to_s3, verbose=verbose, dry_run=dry_run, alertname=alertname)
             if verbose:
                 print(alert)
+                if ext_alert:
+                    print()
+                    print(ext_alert)
 
 
 if __name__ == '__main__':

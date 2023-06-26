@@ -7,7 +7,6 @@ import ligo.skymap.io
 import ligo.skymap.postprocess
 import tempfile
 import requests
-from . import gwstorage
 
 from ligo.skymap.healpix_tree import interpolate_nested
 from astropy.coordinates import SkyCoord
@@ -18,9 +17,11 @@ import numpy as np
 try:
     from . import gw_function as function
     from . import gw_config as config
+    from . import gwstorage
 except:
     import gw_function as function
     import gw_config as config
+    import gwstorage
 
 class Writer():
     
@@ -74,6 +75,12 @@ class Writer():
         self._write_LAT(config=config, verbose=verbose)
 
 
+    def process_external_coinc(self, config: config.Config, verbose=False):
+        self._write_skymap(config=config, verbose=verbose)
+        self._write_skymap_moc(config=config, verbose=verbose)
+        self._write_contours(config=config, verbose=verbose)
+
+
     def _write_skymap(self, config: config.Config, verbose=False):
         if verbose:
             print('Downloading skymap_fits_url')
@@ -81,7 +88,7 @@ class Writer():
         try:
             r = requests.get(self.gwalert_dict['skymap_fits_url'])
         except:
-            print("Bad skymap URL! Gracedb might be bogged")
+            print(f"Bad skymap URL! {self.gwalert_dict['skymap_fits_url']} Gracedb might be bogged")
             return
         
         if self.write_to_s3:
