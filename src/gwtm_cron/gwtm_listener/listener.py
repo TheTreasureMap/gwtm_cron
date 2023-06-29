@@ -26,7 +26,6 @@ class Listener():
     def __init__(self):
 
         home = "/home/azureuser"
-        home = "/Users/crisp"
         conf_path = "/cron/listener_config.json"
 
         self.config = config.Config(path_to_config=f"{home}{conf_path}")
@@ -42,7 +41,7 @@ class Listener():
 
     def _listen(self, alert, write_to_s3=True, verbose=False, dry_run=False, alertname=None):
 
-        record = json.loads(alert)
+        print(type(alert)); record = json.loads(alert)
 
         run_test = True
         if record['superevent_id'][0:2] != 'MS':
@@ -144,7 +143,7 @@ class Listener():
                     mf_url = f"https://gracedb.ligo.org/api/superevents/{gwa['graceid']}/files/{mf}"
                     mf_r = requests.head(mf_url)
                     if mf_r.status_code == 200:
-                        skymap_url = mf_r
+                        skymap_url = mf_url
                         break
                 if skymap_url is None:
                     skymap_url = "Invalid.Sky.Map.URL"
