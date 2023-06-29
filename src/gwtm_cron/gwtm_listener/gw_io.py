@@ -172,15 +172,19 @@ class Writer():
         if verbose:
             print('Calculating Fermi contour map')
 
-        tos = datetime.datetime.strptime(self.gwalert_dict["time_of_signal"], "%Y-%m-%dT%H:%M:%S.%f")
-        earth_ra,earth_dec,earth_rad=function.getearthsatpos(tos)
-        contour = function.makeEarthContour(earth_ra,earth_dec,earth_rad)
-        skycoord = SkyCoord(contour, unit="deg", frame="icrs")
+        try:
+            tos = datetime.datetime.strptime(self.gwalert_dict["time_of_signal"], "%Y-%m-%dT%H:%M:%S.%f")
+            earth_ra,earth_dec,earth_rad=function.getearthsatpos(tos)
+            contour = function.makeEarthContour(earth_ra,earth_dec,earth_rad)
+            skycoord = SkyCoord(contour, unit="deg", frame="icrs")
 
-        moc = MOC.from_polygon_skycoord(skycoord, max_depth=9)
-        moc = moc.complement()
-        mocfootprint = moc.serialize(format='json')
-        moc_string = json.dumps(mocfootprint)
+            moc = MOC.from_polygon_skycoord(skycoord, max_depth=9)
+            moc = moc.complement()
+            mocfootprint = moc.serialize(format='json')
+            moc_string = json.dumps(mocfootprint)
+        except:
+            print("Error in Fermi MOC creation")
+            return
 
         if self.write_to_s3:
             if verbose:
@@ -210,12 +214,16 @@ class Writer():
             print('Calculating LAT contours')
 
         tos = datetime.datetime.strptime(self.gwalert_dict["time_of_signal"], "%Y-%m-%dT%H:%M:%S.%f")
-        ra, dec = function.getFermiPointing(tos)
-        pointing_footprint= function.makeLATFoV(ra,dec)
-        skycoord = SkyCoord(pointing_footprint, unit="deg", frame="icrs")
-        moc = MOC.from_polygon_skycoord(skycoord, max_depth=9)
-        mocfootprint = moc.serialize(format='json')
-        moc_string = json.dumps(mocfootprint)
+        try:
+            ra, dec = function.getFermiPointing(tos)
+            pointing_footprint= function.makeLATFoV(ra,dec)
+            skycoord = SkyCoord(pointing_footprint, unit="deg", frame="icrs")
+            moc = MOC.from_polygon_skycoord(skycoord, max_depth=9)
+            mocfootprint = moc.serialize(format='json')
+            moc_string = json.dumps(mocfootprint)
+        except:
+            print("Error in LAT creation")
+            return
 
         if self.write_to_s3:
             if verbose:
