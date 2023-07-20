@@ -1,0 +1,19 @@
+AWS:
+    database: postgres AWS-RDS
+    Webssite: python flask 
+        deployed via dockerized image
+        linked with AWS-ECR
+
+    storage: AWS-S3
+        for each gravitational wave alert (1-3Mb)
+            alert json/xml
+            90/50 contours + other json contours (Fermi GBM and LAT)
+            fits map
+website:
+    4vcpu's 10gb ram
+
+cron listener:
+    2vcpu's 8gb ram
+
+
+Minor concern: 3 years support. If successful and bringing results over O4, and easily imagine applying to microsoft and getting credits. 

@@ -6,7 +6,7 @@ sys.path.insert(0, '../../src/')
 import gwtm_cron.gwtm_listener as gl
 
 def test_local_file_ingestion():
-    listener = gl.listener.Listener(listener_type="LIGO_ALERT")
+    listener = gl.listener.Listener(listener_type="ICECUBE_NOTICE")
     alert_dir = "alerts"
     files = os.listdir(os.path.join(os.getcwd(), alert_dir))
     #files = [x for x in files if 'retraction' in x]

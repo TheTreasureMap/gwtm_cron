@@ -1,0 +1,13 @@
+{
+    "API_TOKEN":"X8yASL3YVhZhgeOYSf0cIinjjLvE0Wl00Eb-Rw",
+    "AWS_ACCESS_KEY_ID":"AKIA5RANBYVYILRO7F3K",
+    "AWS_SECRET_ACCESS_KEY":"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",
+    "AWS_DEFAULT_REGION":"us-east-2",
+    "AWS_BUCKET":"gwtreasuremap",
+    "KAFKA_CLIENT_ID":"7ahi9jiq1uv2bgou91epk4c0fj",
+    "KAFKA_CLIENT_SECRET":"114i0qoo8qp8ju16vd73s0vburhqrqgbrqhctn17og2qkk0f6iro",
+    "API_BASE":"https://treasuremap.dirac.dev/api/v0/",
+    "AZURE_ACCOUNT_NAME":"treasuremap",
+    "AZURE_ACCOUNT_KEY":"L2GJ1Q+ItecdHL/ltaboelhECwfw5btejF5oVk/0G1smryn2oEXYaoZpq/ryxbbH49dyEUPZMzB7+AStSsWILg==",
+    "STORAGE_BUCKET_SOURCE":"abfs"
+}
