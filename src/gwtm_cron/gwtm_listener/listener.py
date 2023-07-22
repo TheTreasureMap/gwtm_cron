@@ -7,6 +7,7 @@ try:
     from . import ligo_alert
     from . import icecube_notice
 except:
+    print("import error?")
     import gw_config as config
     import ligo_alert
     import icecube_notice
@@ -31,7 +32,7 @@ class Listener():
 
         self.listener_type = listener_type
         home = "/home/azureuser"
-        #home = "/Users/crisp"
+        home = "/Users/crisp"
         conf_path = "/cron/listener_config.json"
 
         self.config = config.Config(path_to_config=f"{home}{conf_path}")

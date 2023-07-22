@@ -48,7 +48,23 @@ def post_gwtm_alert(gwa, config: config.Config):
     params.update({
         'api_token' : config.API_TOKEN
     })
-    print(base, target)
+    
+    r = requests.post(f"{base}{target}", json=params)
+    if r.status_code == 200:
+        return json.loads(r.text)
+    else:
+        raise Exception(f"Bad api request: f{r.text}")
+
+
+def post_icecube_notice(notice, events, config: config.Config):
+    base = config.API_BASE
+    target = "post_icecube_notice"
+    params = {
+        "api_token"                   : config.API_TOKEN,
+        "icecube_notice"              : notice,
+        "icecube_notice_coinc_events" : events
+    }
+
     r = requests.post(f"{base}{target}", json=params)
     if r.status_code == 200:
         return json.loads(r.text)

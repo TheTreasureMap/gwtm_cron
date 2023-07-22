@@ -87,7 +87,9 @@ def listen(config, alert, write_to_s3=True, verbose=False, dry_run=False, alertn
             
             icecube_coincident_events.append(event_record)
 
-    return icecube_notice, icecube_coincident_events
+    retnotice = function.post_icecube_notice(icecube_notice, icecube_coincident_events, config)
+    
+    return retnotice["icecube_notice"], retnotice["icecube_notice_events"]
 
 if __name__ == '__main__':
     l = listener.Listener(listener_type="ICECUBE_NOTICE")
