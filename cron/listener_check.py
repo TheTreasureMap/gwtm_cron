@@ -22,14 +22,28 @@ if __name__ == '__main__':
 
     home_path   = "/home/azureuser"
     python_path = f"{home_path}/anaconda3/envs/gwtm_listener/bin/python"
-    listener    = f"{home_path}/git-clones/gwtm_cron/cron/gwtm_listener_run.py"
-    log_file    = f"{home_path}/cron/listener.log"
+    scripts = [
+        {
+            "name"     : "alert_listener",
+            "script"   : f"{home_path}/git-clones/gwtm_cron/cron/gwtm_listener_run.py",
+            "log_file" : f"{home_path}/cron/listener.log"
+        }, 
+        {
+            "name"     : "icecube_listener",
+            "script"   : f"{home_path}/git-clones/gwtm_cron/cron/gwtm_icecube_run.py",
+            "log_file" : f"{home_path}/cron/listener.log"
+        },
+    ]
 
-    if not checkIfProcessRunning(listener):
-        print("Not running! restarting", datetime.datetime.now())   
-        with open(log_file, "a") as out:
-            subprocess.Popen([python_path, listener], stdout=out)
-        #subprocess.Popen([python_path, listener, ">>", log_file, "2>&1"])
+    for script in scripts:
+        listener = script["script"]
+        name = script["name"]
+        log_file = script["log_file"]
 
-    else:
-        print("Listener is running, nothing to worry about", datetime.datetime.now())
+        if not checkIfProcessRunning(listener):
+            print(f"Listener: {name} not running! restarting", datetime.datetime.now())   
+            with open(log_file, "a") as out:
+                subprocess.Popen([python_path, listener], stdout=out)
+
+        else:
+            print(f"Listener: {name} is running, nothing to worry about", datetime.datetime.now())

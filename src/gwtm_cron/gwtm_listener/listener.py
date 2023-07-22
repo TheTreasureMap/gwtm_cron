@@ -32,7 +32,7 @@ class Listener():
 
         self.listener_type = listener_type
         home = "/home/azureuser"
-        home = "/Users/crisp"
+        #home = "/Users/crisp"
         conf_path = "/cron/listener_config.json"
 
         self.config = config.Config(path_to_config=f"{home}{conf_path}")
