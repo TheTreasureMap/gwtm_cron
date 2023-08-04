@@ -47,7 +47,7 @@ class Listener():
         ])
 
 
-    def _listen(self, alert, write_to_s3, verbose, dry_run, alertname):
+    def _listen(self, alert, write_to_s3, verbose, dry_run, alertname=None):
         listener_function = LISTENER_TYPES[self.listener_type]["func"]
         return listener_function(self.config, alert, write_to_s3, verbose, dry_run, alertname)
     
