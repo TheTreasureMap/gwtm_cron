@@ -9,3 +9,5 @@ boto3
 mocpy
 lxml
 werkzeug
+fsspec
+adlfs
