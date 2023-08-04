@@ -23,7 +23,7 @@ except:
     import gw_io as io
 
 
-def listen(config, alert, write_to_s3=True, verbose=False, dry_run=False, alertname=None):
+def listen(config : config.Config, alert, write_to_s3=True, verbose=False, dry_run=False, alertname=None):
 
     record = json.loads(alert)
     rkeys = record.keys()
@@ -60,11 +60,10 @@ def listen(config, alert, write_to_s3=True, verbose=False, dry_run=False, alertn
                     "sens_energy_range_high" : nfsr["sensitive_energy_range"][1]
                 })
         
-
+    icecube_coincident_events = []
     if "coincident_events" in rkeys:
         cevents = record["coincident_events"]
-        icecube_coincident_events = []
-
+        
         for event in cevents:
             ekeys = event.keys()
             event_record = {
