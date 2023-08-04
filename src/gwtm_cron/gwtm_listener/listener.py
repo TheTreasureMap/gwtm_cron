@@ -47,14 +47,14 @@ class Listener():
         ])
 
 
-    def _listen(self, alert, write_to_s3, verbose, dry_run, alertname):
+    def _listen(self, alert, write_to_s3, verbose, dry_run, alertname=None):
         listener_function = LISTENER_TYPES[self.listener_type]["func"]
         return listener_function(self.config, alert, write_to_s3, verbose, dry_run, alertname)
     
 
     def run(self, write_to_s3=True, verbose=False, dry_run=False):
         if verbose:
-            print(f'Listening for alerts from {self.config.ALERT_DOMAIN}')
+            print(f'Listening for alerts from {LISTENER_TYPES[self.listener_type]["domain"]}')
 
         while True:
             for message in self.consumer.consume(timeout=1):
