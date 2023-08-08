@@ -37,6 +37,12 @@ def listen(config : config.Config, alert, write_to_s3=True, verbose=False, dry_r
         "pval_bayesian" : record["pval_bayesian"] if "pval_bayesian" in rkeys else '0.0',
     }
 
+    if icecube_notice['pval_generic'] == 'null':
+        icecube_notice['pval_generic'] = 0.0
+
+    if icecube_notice['pval_bayesian'] == 'null':
+        icecube_notice['pval_bayesian'] = 0.0
+
     if "most_probable_direction" in rkeys:
         mpd = record["most_probable_direction"]
         icecube_notice.update({
