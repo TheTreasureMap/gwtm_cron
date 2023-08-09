@@ -27,6 +27,7 @@ def listen(config : config.Config, alert, write_to_s3=True, verbose=False, dry_r
 
     record = json.loads(alert)
     rkeys = record.keys()
+    print(record)
 
     icecube_notice = {
         "graceid" : record["ref_ID"] if "ref_ID" in rkeys else "error",
