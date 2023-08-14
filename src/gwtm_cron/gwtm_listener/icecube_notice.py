@@ -30,13 +30,20 @@ def listen(config : config.Config, alert, write_to_s3=True, verbose=False, dry_r
     print(record)
 
     icecube_notice = {
-        "graceid" : record["ref_ID"] if "ref_ID" in rkeys else "error",
+        "ref_id" : record["ref_id"] if "ref_id" in rkeys else "error",
         "alert_datetime" : record["alert_datetime"] if "alert_datetime" in rkeys else '1991-12-23T19:15:00',
         "observation_start" : record["observation_start"] if "observation_start" in rkeys else '1991-12-23T19:15:00',
         "observation_stop" : record["observation_stop"] if "observation_stop" in rkeys else '1991-12-23T19:15:00',
         "pval_generic" : record["pval_generic"] if "pval_generic" in rkeys else '0.0',
         "pval_bayesian" : record["pval_bayesian"] if "pval_bayesian" in rkeys else '0.0',
     }
+
+    ref_id = icecube_notice["ref_id"]
+    if len(ref_id.split("-")):
+        graceid = ref_id.split("-")[0]
+        icecube_notice["graceid"] = graceid
+    else:
+        icecube_notice["graceid"] = "error"
 
     if icecube_notice['pval_generic'] == 'null':
         icecube_notice['pval_generic'] = 0.0
@@ -75,24 +82,30 @@ def listen(config : config.Config, alert, write_to_s3=True, verbose=False, dry_r
             ekeys = event.keys()
             event_record = {
                 "event_dt" : event["event_dt"] if "event_dt" in ekeys else -999,
-                "ra" : event["ra"] if "ra" in ekeys else -999,
-                "dec" : event["dec"] if "dec" in ekeys else -999,
-                "containment_probability" : event["containment_probability"] if "containment_probability" in ekeys else 0.0,
                 "event_pval_generic" : event["event_pval_generic"] if "event_pval_generic" in ekeys else 0.0,
                 "event_pval_bayesian" : event["event_pval_bayesian"] if "event_pval_bayesian" in ekeys else 0.0,
             }
-            if "ra_uncertainty" in ekeys:
-                if isinstance(event["ra_uncertainty"], list):
-                    event_record.update({
-                        "ra_uncertainty" : event["ra_uncertainty"][0]
-                    })
-                else:
-                    event_record.update({
-                        "ra_uncertainty" : event["ra_uncertainty"]
-                    })
+
+            if "localization" in ekeys:
+                localization = event["localization"]
+                localization_keys = localization.keys()
+                event_record.update({
+                    "ra" : localization["ra"] if "ra" in localization_keys else -999,
+                    "dec" : localization["dec"] if "dec" in localization_keys else -999,
+                    "uncertainty_shape" : localization["uncertainty_shape"] if "uncertainty_shape" in localization_keys else "ERROR",
+                    "ra_uncertainty" : localization["ra_uncertainty"] if "ra_uncertainty" in localization_keys else -999,
+                    "containment_probability" : localization["containment_probability"] if "containment_probability" in localization_keys else 0.0,
+                })
             
+            if event_record["event_pval_bayesian"] == 'null':
+                event_record["event_pval_bayesian"] = 0.0
+
+            if event_record["event_pval_generic"] == 'null':
+                event_record["event_pval_generic"] = 0.0
+
             icecube_coincident_events.append(event_record)
 
+    print(icecube_notice, icecube_coincident_events)
     retnotice = function.post_icecube_notice(icecube_notice, icecube_coincident_events, config)
     
     return retnotice["icecube_notice"], retnotice["icecube_notice_events"]
