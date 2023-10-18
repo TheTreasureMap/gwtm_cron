@@ -30,7 +30,7 @@ def listen(config : config.Config, alert, write_to_s3=True, verbose=False, dry_r
     print(record)
 
     icecube_notice = {
-        "ref_id" : record["ref_id"] if "ref_id" in rkeys else "error",
+        "ref_ID" : record["reference"]["gcn.notices.LVK.alert"] if "reference" in rkeys else "error",
         "alert_datetime" : record["alert_datetime"] if "alert_datetime" in rkeys else '1991-12-23T19:15:00',
         "observation_start" : record["observation_start"] if "observation_start" in rkeys else '1991-12-23T19:15:00',
         "observation_stop" : record["observation_stop"] if "observation_stop" in rkeys else '1991-12-23T19:15:00',
@@ -38,12 +38,13 @@ def listen(config : config.Config, alert, write_to_s3=True, verbose=False, dry_r
         "pval_bayesian" : record["pval_bayesian"] if "pval_bayesian" in rkeys else '0.0',
     }
 
-    ref_id = icecube_notice["ref_id"]
-    if len(ref_id.split("-")):
-        graceid = ref_id.split("-")[0]
-        icecube_notice["graceid"] = graceid
-    else:
-        icecube_notice["graceid"] = "error"
+    # ref_id = icecube_notice["ref_ID"]
+    # if len(ref_id.split("-")):
+    #     graceid = ref_id.split("-")[0]
+    #     icecube_notice["graceid"] = graceid
+    # else:
+    #     icecube_notice["graceid"] = "error"
+    icecube_notice["graceid"] = record["ref_ID"] if "ref_ID" in rkeys else "error"
 
     if icecube_notice['pval_generic'] == 'null':
         icecube_notice['pval_generic'] = 0.0
@@ -103,12 +104,19 @@ def listen(config : config.Config, alert, write_to_s3=True, verbose=False, dry_r
             if event_record["event_pval_generic"] == 'null':
                 event_record["event_pval_generic"] = 0.0
 
+            if isinstance(event_record["ra_uncertainty"], list):
+                event_record["ra_uncertainty"] = event_record["ra_uncertainty"][0]
+
             icecube_coincident_events.append(event_record)
 
-    print(icecube_notice, icecube_coincident_events)
-    retnotice = function.post_icecube_notice(icecube_notice, icecube_coincident_events, config)
+    if not dry_run and len(icecube_coincident_events):
+        print(icecube_notice, icecube_coincident_events)
+        retnotice = function.post_icecube_notice(icecube_notice, icecube_coincident_events, config)
+    elif verbose:
+        print("Not ingesting")
     
-    return retnotice["icecube_notice"], retnotice["icecube_notice_events"]
+        return retnotice["icecube_notice"], retnotice["icecube_notice_events"]
+    return {}, {}
 
 if __name__ == '__main__':
     l = listener.Listener(listener_type="ICECUBE_NOTICE")
