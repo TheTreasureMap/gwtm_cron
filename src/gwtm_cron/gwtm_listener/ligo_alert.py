@@ -20,6 +20,8 @@ except:
     import gw_io as io
 
 
+from find_galaxies import EventLocalization,generate_galaxy_list
+
 
 def listen(config : config, alert, write_to_s3=True, verbose=False, dry_run=False, alertname=None):
 
@@ -141,6 +143,12 @@ def listen(config : config, alert, write_to_s3=True, verbose=False, dry_run=Fals
                 "distance_error"  : header['DISTSTD'] if 'DISTSTD' in header_keys else "-999.9",
                 "timesent"        : header['DATE'] if 'DATE' in header_keys else '1991-12-23T19:15:00',
             })
+            
+            # create EventLocatlization object to be passed into the galaxies list
+            gwa_obj = EventLocalization(gwa)
+
+            #makes galaxy list, posts to API
+            find_galaxies(gwa_obj)
 
             writer.set_gwalert_dict(gwa)
             writer.set_skymap(skymap_bytes)
