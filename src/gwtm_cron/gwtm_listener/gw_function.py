@@ -55,6 +55,21 @@ def post_gwtm_alert(gwa, config: config.Config):
     else:
         raise Exception(f"Bad api request: f{r.text}")
 
+#post the galaxy list
+def post_galaxy_list(galaxies,config: config.Config):
+    base = config.API_BASE
+    target = "event_galaxies"
+    params = galaxies
+    params.update({
+        'api_token' : config.API_TOKEN
+    })
+    
+    r = requests.post(f"{base}{target}", json=params)
+    if r.status_code == 200:
+        return json.loads(r.text)
+    else:
+        raise Exception(f"Bad api request: f{r.text}")
+
 
 def post_icecube_notice(notice, events, config: config.Config):
     base = config.API_BASE

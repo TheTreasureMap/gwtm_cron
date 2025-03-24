@@ -144,15 +144,37 @@ def listen(config : config, alert, write_to_s3=True, verbose=False, dry_run=Fals
                 "timesent"        : header['DATE'] if 'DATE' in header_keys else '1991-12-23T19:15:00',
             })
             
-            # create EventLocatlization object to be passed into the galaxies list
-            gwa_obj = EventLocalization(gwa)
-
-            #makes galaxy list, posts to API
-            find_galaxies(gwa_obj)
-
             writer.set_gwalert_dict(gwa)
             writer.set_skymap(skymap_bytes)
             writer.process(config=config, verbose=verbose)
+
+            try:
+                # create EventLocatlization object to be passed into the galaxies list
+                gwa_obj = EventLocalization(gwa)
+
+                #makes galaxy list, posts to API
+                galaxies = generate_galaxy_list(gwa_obj)
+
+                post_galaxies_json = {
+                    "graceid":gwa_obj.graceid,
+                    "timesent_stamp":gwa_obj.timesent_stamp,
+                    "groupname":"LCOGT",
+                    "reference":"https://ui.adsabs.harvard.edu/abs/2020arXivNicePaper",
+                    "request_doi":True,
+                    "galaxies":[
+                        {
+                            "ra":galaxies['ra'],
+                            "dec":galaxies['dec'],
+                            "score":galaxies['score'],
+                            "rank":galaxies['rank'],
+                            "name":galaxies['name'],
+                            "info":{
+                            }
+                        },
+                    ]
+                }
+            except Exception as e:
+                print(e)
         
     if "external_coinc" in alert_keys and record["external_coinc"] is not None:
         ext_coin = record["external_coinc"]
@@ -212,6 +234,7 @@ def listen(config : config, alert, write_to_s3=True, verbose=False, dry_run=Fals
 
     if not dry_run:
         gwa = function.post_gwtm_alert(gwa, config=config)
+        gal = function.post_galaxy_list(post_galaxies_json, config=config)
         if ext_gwa is not None:
             ext_gwa = function.post_gwtm_alert(ext_gwa, config=config)
     

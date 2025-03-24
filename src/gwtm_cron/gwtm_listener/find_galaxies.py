@@ -10,6 +10,7 @@ from scipy.stats import norm
 #from scipy.special import gammaincc
 from ligo.skymap import distance
 import requests
+import os
 
 #defines EventLocalization class to match formatting of tom toolkit model, input into generate_galaxy_list
 #accepts dictionary from ligo_alert.py gwa dictionary
@@ -34,10 +35,12 @@ def generate_galaxy_list(eventlocalization, completeness=None, credzone=None, sk
     """
 
     # Parameters:
-    config = ConfigParser(inline_comment_prefixes=';')
-    config.read('gal_catalog_config.ini') #find_galaxies.py and gal_catalog_config.ini must be in same directory
-    
-    catalog_path = config.get('GALAXIES', 'CATALOG_PATH') # Path to numpy file containing the galaxy catalog (faster than getting from the db)
+    try:
+        config = ConfigParser(inline_comment_prefixes=';')
+        config.read(os.path.join(os.getcwd(),'gal_catalog_config.ini')) #find_galaxies.py and gal_catalog_config.ini must be in same directory
+        catalog_path = config.get('GALAXIES', 'CATALOG_PATH') # Path to numpy file containing the galaxy catalog (faster than getting from the db)
+    except Exception as e:
+        print(e)
     
     # Matching parameters:
     if not credzone:
@@ -243,42 +246,22 @@ def generate_galaxy_list(eventlocalization, completeness=None, credzone=None, sk
 
 
         # Creates Event Galaxies list and posts API matching format from https://treasuremap.space/documentation Convolved Galaxies
+    
+    
+    score=(p * massNorm / normalization)[:n]
+    ra=galaxies[:n]['ra']
+    dec=galaxies[:n]['dec']
+    name = galaxies[:n]['objname']
+    rank = ii[:n]
 
-        score=(p * massNorm / normalization)[ind]
-        ra=galaxies[ind]['ra']
-        dec=galaxies[ind]['dec']
-        name = galaxies[ind]['objname']
-
-        BASE = "https://treasuremap.space/api/v1"
-        TARGET = "event_galaxies"
-        API_TOKEN = "STILL NEED?"
-
-
-        json_data = {
-                "api_token":"API_TOKEN",
-                "graceid":"graceid1",
-                "timesent_stamp":"2019-05-22T12:33:59",
-                "groupname":"LCOGT",
-                "reference":"https://ui.adsabs.harvard.edu/abs/2020arXivNicePaper",
-                "request_doi":True,
-                "doi_group_id":groupID,
-                "galaxies":[
-                    {
-                        "ra":ra,
-                        "dec":dec,
-                        "score":score,
-                        "rank":ind,
-                        "name":name,
-                        "info":{
-                        }
-                    },
-                ]
-            }
-        url = "{}/{}".format(BASE, target)
-
-        r = requests.post(url=url, json=json_params)
-
-        print(r.text)
-
+    galaxy_list_to_n = {
+        'score': score,
+        'ra': ra,
+        'dec': dec,
+        'name': name,
+        'rank': rank
+    }
         
     print('INFO: Finished creating ranked galaxy list for EventLocalization {}'.format(eventlocalization))
+
+    return galaxy_list_to_n
