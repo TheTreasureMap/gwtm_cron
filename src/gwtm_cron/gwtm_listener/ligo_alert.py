@@ -13,18 +13,19 @@ try:
     from . import gw_config as config
     from . import gw_function as function
     from . import gw_io as io
+    from . import find_galaxies as fg
 except:
     import listener
     import gw_config as config
     import gw_function as function
     import gw_io as io
+    import find_galaxies as fg
 
-
-from find_galaxies import EventLocalization,generate_galaxy_list
+# from find_galaxies import EventLocalization,generate_galaxy_list
 
 
 def listen(config : config, alert, write_to_s3=True, verbose=False, dry_run=False, alertname=None):
-
+        
     record = json.loads(alert)
 
     run_test = True
@@ -150,28 +151,30 @@ def listen(config : config, alert, write_to_s3=True, verbose=False, dry_run=Fals
 
             try:
                 # create EventLocatlization object to be passed into the galaxies list
-                gwa_obj = EventLocalization(gwa)
+                gwa_obj = fg.EventLocalization(gwa)
 
                 #makes galaxy list, posts to API
-                galaxies = generate_galaxy_list(gwa_obj)
-
+                galaxies = fg.generate_galaxy_list(gwa_obj)
+                galaxy_list = []
+                for i in range(len(galaxies['ra'])):
+                    galaxy_list.append({
+                        "ra":galaxies['ra'][i],
+                        "dec":galaxies['dec'][i],
+                        "score":galaxies['score'][i],
+                        "rank":galaxies['rank'][i],
+                        "name":galaxies['name'][i],
+                        "info":{
+                            'string_param': 'string_value'
+                        }
+                    })  
+                
                 post_galaxies_json = {
                     "graceid":gwa_obj.graceid,
                     "timesent_stamp":gwa_obj.timesent_stamp,
                     "groupname":"LCOGT",
-                    "reference":"https://ui.adsabs.harvard.edu/abs/2020arXivNicePaper",
+                    "reference":"https://ui.adsabs.harvard.edu/abs/2017ApJ...848L..33A/abstract",
                     "request_doi":True,
-                    "galaxies":[
-                        {
-                            "ra":galaxies['ra'],
-                            "dec":galaxies['dec'],
-                            "score":galaxies['score'],
-                            "rank":galaxies['rank'],
-                            "name":galaxies['name'],
-                            "info":{
-                            }
-                        },
-                    ]
+                    "galaxies":galaxy_list
                 }
             except Exception as e:
                 print(e)
@@ -234,7 +237,10 @@ def listen(config : config, alert, write_to_s3=True, verbose=False, dry_run=Fals
 
     if not dry_run:
         gwa = function.post_gwtm_alert(gwa, config=config)
+        #call delete before
+        gal_del = function.delete_galaxy_list(post_galaxies_json, config=config)
         gal = function.post_galaxy_list(post_galaxies_json, config=config)
+        
         if ext_gwa is not None:
             ext_gwa = function.post_gwtm_alert(ext_gwa, config=config)
     

@@ -65,10 +65,48 @@ def post_galaxy_list(galaxies,config: config.Config):
     })
     
     r = requests.post(f"{base}{target}", json=params)
+    print("INFO: Successfully posted galaxy list")
     if r.status_code == 200:
         return json.loads(r.text)
     else:
         raise Exception(f"Bad api request: f{r.text}")
+
+
+def delete_galaxy_list(galaxies,config: config.Config):
+    base = config.API_BASE
+    target = "event_galaxies"
+
+    params = {
+        'groupname' : galaxies['groupname'],
+        'graceid' : galaxies['graceid'],
+        'score_lt': 1
+    }
+    params.update({
+        'api_token' : config.API_TOKEN
+    })
+    r_get = requests.get(f"{base}{target}", json=params)
+
+    if r_get.status_code == 200:
+        gal_list = json.loads(r_get.text)
+        if gal_list == []:
+            return
+        else:
+            target_remove = 'remove_event_galaxies'
+            del_params = {
+                'listid':gal_list[0]['listid'],
+                'api_token':config.API_TOKEN
+            }
+
+            r_post = requests.post(f"{base}{target_remove}", json=del_params) 
+            print("INFO: Successfully deleted galaxy list")
+
+            if r_post.status_code == 200:
+                return json.loads(r_post.text)
+            else:
+                raise Exception(f"Bad api request: f{r_post.text}")
+    else:
+        raise Exception(f"Bad api request: f{r_get.text}")
+    
 
 
 def post_icecube_notice(notice, events, config: config.Config):
