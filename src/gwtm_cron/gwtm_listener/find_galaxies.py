@@ -19,7 +19,7 @@ class EventLocalization(object):
         self.distance_mean = gwa_dict['distance']
         self.skymap_url = gwa_dict['skymap_fits_url']
         self.graceid = gwa_dict['graceid']
-        self.timesent_stamp = ['timesent']
+        self.timesent_stamp = gwa_dict['timesent']
     
     def __str__(self):
         return self.graceid
@@ -33,11 +33,12 @@ def generate_galaxy_list(eventlocalization, completeness=None, credzone=None, sk
     
     eventlocalization: an EventLocalization object (is still true, no longer tom toolkit model)
     """
-
+    
     # Parameters:
     try:
         config = ConfigParser(inline_comment_prefixes=';')
-        config.read(os.path.join(os.getcwd(),'gal_catalog_config.ini')) #find_galaxies.py and gal_catalog_config.ini must be in same directory
+        config.read(os.path.join(os.getcwd(),'../../src/gwtm_cron/gwtm_listener/gal_catalog_config.ini')) #find_galaxies.py and gal_catalog_config.ini must be in same directory
+        
         catalog_path = config.get('GALAXIES', 'CATALOG_PATH') # Path to numpy file containing the galaxy catalog (faster than getting from the db)
     except Exception as e:
         print(e)
@@ -156,51 +157,19 @@ def generate_galaxy_list(eventlocalization, completeness=None, credzone=None, sk
         return
 
     ### Normalize by mass:
-    ### NOTE: Can also do this in using luminosity (commented out)
+    ### NOTE: Can also do this in using luminosity
 
     mass = galaxies['Mstar']
     massNorm = mass / np.sum(mass)
     massnormalization = np.sum(mass)
     normalization = np.sum(p * massNorm)
 
-    #luminosity = mag.L_nu_from_magAB(galaxies['Bmag'] - 5 * np.log10(galaxies['Dist'] * (10 ** 5)))
-    #luminosityNorm = luminosity / np.sum(luminosity)
-    #luminositynormalization = np.sum(luminosity)
-    #normalization = np.sum(p * luminosityNorm)
-
-    #taking 50% of mass (missingpiece is the area under the schecter function between l=inf and the brightest galaxy in the field.
-    #if the brightest galaxy in the field is fainter than the schecter function cutoff- no cutoff is made.
-    #while the number of galaxies in the field is smaller than minGalaxies- we allow for fainter galaxies, until we take all of them.
-
-    ### NOTE: Can skip this block if using mass
-    #missingpiece = gammaincc(alpha + 2, 10 ** (-(min(galaxies['Bmag']-5*np.log10(galaxies['Dist']*(10**5))) - MB_star) / 2.5)) ##no galaxies brighter than this in the field- so don't count that part of the Schechter function
-
-    #while doMassCuttoff:
-    #    MB_max = MB_star + 2.5 * np.log10(gammaincinv(alpha + 2, completeness+missingpiece))
-
-    #    if (min(galaxies['Bmag']-5*np.log10(galaxies['Dist']*(10**5))) - MB_star)>0: #if the brightest galaxy in the field is fainter then cutoff brightness- don't cut by brightness
-    #        MB_max = 100
-
-    #    brightest = np.where(galaxies['Bmag']-5*np.log10(galaxies['Dist']*(10**5))<MB_max)
-    #    if len(brightest[0])<minGalaxies:
-    #        if completeness>=0.9: #tried hard enough. just take all of them
-    #            completeness = 1 # just to be consistent.
-    #            doMassCuttoff = False
-    #        else:
-    #            completeness = (completeness + (1. - completeness) / 2)
-    #    else: #got enough galaxies
-    #        galaxies = galaxies[brightest]
-    #        p = p[brightest]
-    #        luminosityNorm = luminosityNorm[brightest]
-    #        doMassCuttoff = False
-
-    # Accounting for distance
     absolute_sensitivity = sensitivity - 5 * np.log10(galaxies['DistMpc'] * (10 ** 5))
+    absolute_sensitivity = absolute_sensitivity.astype(np.float64)
 
     #absolute_sensitivity_lum = mag.f_nu_from_magAB(absolute_sensitivity)
     absolute_sensitivity_lum = 4e33 * 10**(0.4*(4.74-absolute_sensitivity)) # Check this?
     distanceFactor = np.zeros(len(galaxies))
-
     distanceFactor[:] = ((maxL - absolute_sensitivity_lum) / (maxL - minL))
     distanceFactor[mindistFactor>(maxL - absolute_sensitivity_lum) / (maxL - minL)] = mindistFactor
     distanceFactor[absolute_sensitivity_lum<minL] = 1
@@ -222,32 +191,14 @@ def generate_galaxy_list(eventlocalization, completeness=None, credzone=None, sk
         sum_seen = sum_seen + (p[ii[galaxies50per]]*massNorm[ii[galaxies50per]]*distanceFactor[ii[galaxies50per]])/float(normalization)
         galaxies50per = galaxies50per+1
 
-    if len(ii) > ngalaxtoshow:
-        n = ngalaxtoshow
-    else:
-        n = len(ii)
+    n = len(ii)
+    #if want to limit by number of galaxies in .ini file
 
-    ### Save the galaxies in the database
-    for i in range(ii.shape[0])[:n]:
-        ind = ii[i]
-        ## OLD, for snex2
-        # newgalaxyrow = GWFollowupGalaxy(catalog='NEDLVSCatalog', 
-        #                                 catalog_objname=galaxies[ind]['objname'],
-        #                                 ra=galaxies[ind]['ra'], 
-        #                                 dec=galaxies[ind]['dec'],
-        #                                 dist=galaxies[ind]['DistMpc'], 
-        #                                 score=(p * massNorm / normalization)[ind],
-        #                                 eventlocalization=eventlocalization
-        #                 )
-        # newgalaxyrow.save()
+    # if len(ii) > ngalaxtoshow:
+    #     n = ngalaxtoshow
+    # else:
+    #     n = len(ii)
 
-        #####
-
-
-
-        # Creates Event Galaxies list and posts API matching format from https://treasuremap.space/documentation Convolved Galaxies
-    
-    
     score=(p * massNorm / normalization)[:n]
     ra=galaxies[:n]['ra']
     dec=galaxies[:n]['dec']
@@ -259,9 +210,8 @@ def generate_galaxy_list(eventlocalization, completeness=None, credzone=None, sk
         'ra': ra,
         'dec': dec,
         'name': name,
-        'rank': rank
+        'rank': rank.tolist()
     }
-        
-    print('INFO: Finished creating ranked galaxy list for EventLocalization {}'.format(eventlocalization))
 
+    print('INFO: Finished creating ranked galaxy list for EventLocalization {}'.format(eventlocalization))
     return galaxy_list_to_n
