@@ -33,7 +33,7 @@ def generate_galaxy_list(eventlocalization, completeness=None, credzone=None, sk
     
     eventlocalization: an EventLocalization object (is still true, no longer tom toolkit model)
     """
-    
+
     # Parameters:
     try:
         config = ConfigParser(inline_comment_prefixes=';')
@@ -67,18 +67,18 @@ def generate_galaxy_list(eventlocalization, completeness=None, credzone=None, sk
             ### This is a burst alert, so just read the probabilities from the map
             ### and fix the distance to only look at nearby galaxies
             if skymap_filepath is not None:
-                prob = hp.read_map(skymap_filepath, field=0, verbose=False)
+                prob = hp.read_map(skymap_filepath, field=0)
             else:
-                prob = hp.read_map(eventlocalization.skymap_url.replace('.multiorder.fits','.fits.gz'), field=0, verbose=False)
+                prob = hp.read_map(eventlocalization.skymap_url.replace('.multiorder.fits','.fits.gz'), field=0)
             ### Fix distance vectors:
             distmu = np.ones(len(prob)) * 10.0 # Fix to 10 Mpc
             distsigma = np.ones(len(prob)) * 10.0 # Fix to 10 Mpc
             distnorm = np.ones(len(prob)) # Flat prior?
         else:
             if skymap_filepath is not None:
-                prob, distmu, distsigma, distnorm = hp.read_map(skymap_filepath, field=[0,1,2,3], verbose=False)
+                prob, distmu, distsigma, distnorm = hp.read_map(skymap_filepath, field=[0,1,2,3])
             else:
-                prob, distmu, distsigma, distnorm = hp.read_map(eventlocalization.skymap_url.replace('.multiorder.fits','.fits.gz'), field=[0,1,2,3], verbose=False)
+                prob, distmu, distsigma, distnorm = hp.read_map(eventlocalization.skymap_url.replace('.multiorder.fits','.fits.gz'), field=[0,1,2,3])
 
     except Exception as e:
         print('WARNING: Failed to read sky map for {}'.format(eventlocalization))
