@@ -79,7 +79,6 @@ def delete_galaxy_list(galaxies,config: config.Config):
     params = {
         'groupname' : galaxies['groupname'],
         'graceid' : galaxies['graceid'],
-        'score_lt': 1
     }
     params.update({
         'api_token' : config.API_TOKEN

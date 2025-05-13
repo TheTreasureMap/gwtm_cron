@@ -36,31 +36,30 @@ def generate_galaxy_list(eventlocalization, completeness=None, credzone=None, sk
 
     # Parameters:
     try:
-        config = ConfigParser(inline_comment_prefixes=';')
-        config.read(os.path.join(os.getcwd(),'../../src/gwtm_cron/gwtm_listener/gal_catalog_config.ini')) #find_galaxies.py and gal_catalog_config.ini must be in same directory
-        
-        catalog_path = config.get('GALAXIES', 'CATALOG_PATH') # Path to numpy file containing the galaxy catalog (faster than getting from the db)
+        galaxy_config = ConfigParser(inline_comment_prefixes=';')
+        galaxy_config.read(os.path.join(os.getcwd(),'../../gal_catalog_config.ini')) #find_galaxies.py and gal_catalog_config.ini must be in same directory
+        catalog_path = galaxy_config.get('GALAXIES', 'CATALOG_PATH') # Path to numpy file containing the galaxy catalog (faster than getting from the db)
     except Exception as e:
         print(e)
     
     # Matching parameters:
     if not credzone:
-        credzone = float(config.get('GALAXIES', 'CREDZONE')) # Localization probability to consider credible (e.g. 0.99)
-    nsigmas_in_d = float(config.get('GALAXIES', 'NSIGMAS_IN_D')) # Sigmas to consider in distnace (e.g. 3)
+        credzone = float(galaxy_config.get('GALAXIES', 'CREDZONE')) # Localization probability to consider credible (e.g. 0.99)
+    nsigmas_in_d = float(galaxy_config.get('GALAXIES', 'NSIGMAS_IN_D')) # Sigmas to consider in distnace (e.g. 3)
     if not completeness:
-        completeness = float(config.get('GALAXIES', 'COMPLETENESSP')) # Mass fraction completeness (e.g. 0.5)
-    minGalaxies = int(config.get('GALAXIES', 'MINGALAXIES')) # Minimum number of galaxies to output (e.g. 100)
+        completeness = float(galaxy_config.get('GALAXIES', 'COMPLETENESSP')) # Mass fraction completeness (e.g. 0.5)
+    minGalaxies = int(galaxy_config.get('GALAXIES', 'MINGALAXIES')) # Minimum number of galaxies to output (e.g. 100)
     
-    minL = float(config.get('GALAXIES', 'MINL')) # Estimated brightest KN luminosity
-    maxL = float(config.get('GALAXIES', 'MAXL')) # Estimated faintest KN luminosity
-    sensitivity = float(config.get('GALAXIES', 'SENSITIVITY')) # Estimatest faintest app mag we can see
-    ngalaxtoshow = int(config.get('GALAXIES', 'NGALAXIES')) # Number of galaxies to show
+    minL = float(galaxy_config.get('GALAXIES', 'MINL')) # Estimated brightest KN luminosity
+    maxL = float(galaxy_config.get('GALAXIES', 'MAXL')) # Estimated faintest KN luminosity
+    sensitivity = float(galaxy_config.get('GALAXIES', 'SENSITIVITY')) # Estimatest faintest app mag we can see
+    ngalaxtoshow = int(galaxy_config.get('GALAXIES', 'NGALAXIES')) # Number of galaxies to show
     
-    mindistFactor = float(config.get('GALAXIES', 'MINDISTFACTOR')) #reflecting a small chance that the theory is comletely wrong and we can still see something
+    mindistFactor = float(galaxy_config.get('GALAXIES', 'MINDISTFACTOR')) #reflecting a small chance that the theory is comletely wrong and we can still see something
     
     ## Schecter Function parameters:
-    #alpha = float(config.get('GALAXIES', 'ALPHA'))
-    #MB_star = float(config.get('GALAXIES', 'MB_STAR'))
+    #alpha = float(galaxy_config.get('GALAXIES', 'ALPHA'))
+    #MB_star = float(galaxy_config.get('GALAXIES', 'MB_STAR'))
     
     try:
         if not eventlocalization.distance_mean:
@@ -214,4 +213,28 @@ def generate_galaxy_list(eventlocalization, completeness=None, credzone=None, sk
     }
 
     print('INFO: Finished creating ranked galaxy list for EventLocalization {}'.format(eventlocalization))
-    return galaxy_list_to_n
+
+
+    galaxy_list = []
+    for i in range(len(galaxy_list_to_n['ra'])):
+        galaxy_list.append({
+            "ra":galaxy_list_to_n['ra'][i],
+            "dec":galaxy_list_to_n['dec'][i],
+            "score":galaxy_list_to_n['score'][i],
+            "rank":galaxy_list_to_n['rank'][i],
+            "name":galaxy_list_to_n['name'][i],
+            "info":{
+                'string_param': 'string_value'
+            }
+        })  
+    
+    post_galaxies_json = {
+        "graceid":eventlocalization.graceid,
+        "timesent_stamp":eventlocalization.timesent_stamp,
+        "groupname":"LCOGT",
+        "reference":"https://ui.adsabs.harvard.edu/abs/2017ApJ...848L..33A/abstract",
+        "request_doi":True,
+        "galaxies":galaxy_list
+    }
+
+    return post_galaxies_json

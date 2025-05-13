@@ -152,30 +152,9 @@ def listen(config : config, alert, write_to_s3=True, verbose=False, dry_run=Fals
             try:
                 # create EventLocatlization object to be passed into the galaxies list
                 gwa_obj = fg.EventLocalization(gwa)
-
                 #makes galaxy list, posts to API
-                galaxies = fg.generate_galaxy_list(gwa_obj)
-                galaxy_list = []
-                for i in range(len(galaxies['ra'])):
-                    galaxy_list.append({
-                        "ra":galaxies['ra'][i],
-                        "dec":galaxies['dec'][i],
-                        "score":galaxies['score'][i],
-                        "rank":galaxies['rank'][i],
-                        "name":galaxies['name'][i],
-                        "info":{
-                            'string_param': 'string_value'
-                        }
-                    })  
+                post_galaxies_json = fg.generate_galaxy_list(gwa_obj)
                 
-                post_galaxies_json = {
-                    "graceid":gwa_obj.graceid,
-                    "timesent_stamp":gwa_obj.timesent_stamp,
-                    "groupname":"LCOGT",
-                    "reference":"https://ui.adsabs.harvard.edu/abs/2017ApJ...848L..33A/abstract",
-                    "request_doi":True,
-                    "galaxies":galaxy_list
-                }
             except Exception as e:
                 print(e)
         
