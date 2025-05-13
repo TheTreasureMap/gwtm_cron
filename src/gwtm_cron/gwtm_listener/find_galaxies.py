@@ -91,7 +91,7 @@ def generate_galaxy_list(eventlocalization, completeness=None, credzone=None, sk
     # Load the galaxy catalog.
     print('INFO: Loading Galaxy Catalog')
     galaxies = Table.read(catalog_path)
-    
+
     ### If using luminosity, remove galaxies with no Lum_X, like so:q
     #galaxies = galaxies[~np.isnan(galaxies['Lum_W1'])]
     ### If using mass, make cuts on DistMpc and Mstar
@@ -130,8 +130,6 @@ def generate_galaxy_list(eventlocalization, completeness=None, credzone=None, sk
     inddistance = np.where(np.abs(d-distmu[ipix])<nsigmas_in_d*distsigma[ipix])
     indcredzone = np.where(p>=probcutoff)
 
-    doMassCuttoff = True
-
     # Increase credzone to 99.995% if no galaxies found:
     # If no galaxies found in the credzone and within the right distance range
     if len(galaxies[np.intersect1d(indcredzone,inddistance)]) == 0:
@@ -143,7 +141,6 @@ def generate_galaxy_list(eventlocalization, completeness=None, credzone=None, sk
             sortedprob = sortedprob[:-1]
         inddistance = np.where(np.abs(d - distmu[ipix]) < 5 * distsigma[ipix])
         indcredzone = np.where(p >= probcutoff)
-        doMassCuttoff = False
 
     ipix = ipix[np.intersect1d(indcredzone, inddistance)]
     p = p[np.intersect1d(indcredzone, inddistance)]
@@ -160,7 +157,6 @@ def generate_galaxy_list(eventlocalization, completeness=None, credzone=None, sk
 
     mass = galaxies['Mstar']
     massNorm = mass / np.sum(mass)
-    massnormalization = np.sum(mass)
     normalization = np.sum(p * massNorm)
 
     absolute_sensitivity = sensitivity - 5 * np.log10(galaxies['DistMpc'] * (10 ** 5))
@@ -202,29 +198,23 @@ def generate_galaxy_list(eventlocalization, completeness=None, credzone=None, sk
     ra=galaxies[:n]['ra']
     dec=galaxies[:n]['dec']
     name = galaxies[:n]['objname']
+    Mstar = galaxies[:n]['Mstar']
     rank = ii[:n]
-
-    galaxy_list_to_n = {
-        'score': score,
-        'ra': ra,
-        'dec': dec,
-        'name': name,
-        'rank': rank.tolist()
-    }
-
+    rank = rank.tolist()
+    
     print('INFO: Finished creating ranked galaxy list for EventLocalization {}'.format(eventlocalization))
 
 
     galaxy_list = []
-    for i in range(len(galaxy_list_to_n['ra'])):
+    for i in range(len(ra)):
         galaxy_list.append({
-            "ra":galaxy_list_to_n['ra'][i],
-            "dec":galaxy_list_to_n['dec'][i],
-            "score":galaxy_list_to_n['score'][i],
-            "rank":galaxy_list_to_n['rank'][i],
-            "name":galaxy_list_to_n['name'][i],
+            "ra":ra[i],
+            "dec":dec[i],
+            "score":score[i],
+            "rank":rank[i],
+            "name":name[i],
             "info":{
-                'string_param': 'string_value'
+                'Mstar':Mstar[i]
             }
         })  
     
