@@ -186,7 +186,6 @@ def generate_galaxy_list(eventlocalization, completeness=None, credzone=None, sk
         sum_seen = sum_seen + (p[ii[galaxies50per]]*massNorm[ii[galaxies50per]]*distanceFactor[ii[galaxies50per]])/float(normalization)
         galaxies50per = galaxies50per+1
 
-    n = len(ii)
     #if want to limit by number of galaxies in .ini file
 
     # if len(ii) > ngalaxtoshow:
@@ -194,27 +193,26 @@ def generate_galaxy_list(eventlocalization, completeness=None, credzone=None, sk
     # else:
     #     n = len(ii)
 
-    score=(p * massNorm / normalization)[:n]
-    ra=galaxies[:n]['ra']
-    dec=galaxies[:n]['dec']
-    name = galaxies[:n]['objname']
-    Mstar = galaxies[:n]['Mstar']
-    rank = ii[:n]
-    rank = rank.tolist()
-    
+    score=(p * massNorm / normalization)
+    ra=galaxies['ra']
+    dec=galaxies['dec']
+    name = galaxies['objname']
+    Mstar = galaxies['Mstar']
+
     print('INFO: Finished creating ranked galaxy list for EventLocalization {}'.format(eventlocalization))
 
-
+    iter = ii.tolist()
     galaxy_list = []
-    for i in range(len(ra)):
+    for i in range(len(iter)):
+        ind = iter[i]
         galaxy_list.append({
-            "ra":ra[i],
-            "dec":dec[i],
-            "score":score[i],
-            "rank":rank[i],
-            "name":name[i],
+            "ra":ra[ind],
+            "dec":dec[ind],
+            "score":score[ind],
+            "rank":i,
+            "name":name[ind],
             "info":{
-                'Mstar':Mstar[i]
+                'Mstar':Mstar[ind]
             }
         })  
     
