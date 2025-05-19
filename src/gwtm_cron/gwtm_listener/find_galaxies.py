@@ -198,7 +198,8 @@ def generate_galaxy_list(eventlocalization, completeness=None, credzone=None, sk
     dec=galaxies['dec']
     name = galaxies['objname']
     Mstar = galaxies['Mstar']
-
+    dist = galaxies['DistMpc'].tolist()
+    
     print('INFO: Finished creating ranked galaxy list for EventLocalization {}'.format(eventlocalization))
 
     iter = ii.tolist()
@@ -212,7 +213,8 @@ def generate_galaxy_list(eventlocalization, completeness=None, credzone=None, sk
             "rank":i,
             "name":name[ind],
             "info":{
-                'Mstar':Mstar[ind]
+                'Mstar':Mstar[ind],
+                'Distance [Mpc]':dist[ind]
             }
         })  
     
