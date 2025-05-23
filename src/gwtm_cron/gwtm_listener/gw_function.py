@@ -1,26 +1,25 @@
 import datetime
 import os
 import urllib
-import ephem
+import ephem # type:ignore
 import math
 import tempfile
-import requests
+import requests # type:ignore
 import json
 
 import numpy as np
-import astropy.io.fits as fits
-import astropy_healpix as ah
+import astropy.io.fits as fits # type:ignore
+import astropy_healpix as ah # type:ignore
 
 from bs4 import BeautifulSoup
-from shapely.geometry import Polygon
+from shapely.geometry import Polygon # type:ignore
 from shapely.geometry import Point
 from urllib.request import urlopen
-import astropy.io.fits as fits
 
 try:
     from . import gw_config as config 
-except:
-    import gw_config as config
+except ImportError:
+    import gw_config as config # type:ignore
 '''
     listener functions
 '''
@@ -67,7 +66,7 @@ def post_galaxy_list(galaxies,config: config.Config):
     r = requests.post(f"{base}{target}", json=params)
     print("INFO: Successfully posted galaxy list")
     if r.status_code == 200:
-        return json.loads(r.text)
+        return
     else:
         raise Exception(f"Bad api request: f{r.text}")
 
@@ -100,7 +99,7 @@ def delete_galaxy_list(galaxies,config: config.Config):
             print("INFO: Successfully deleted galaxy list")
 
             if r_post.status_code == 200:
-                return json.loads(r_post.text)
+                return
             else:
                 raise Exception(f"Bad api request: f{r_post.text}")
     else:

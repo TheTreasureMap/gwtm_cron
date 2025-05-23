@@ -1,16 +1,12 @@
 #!/usr/bin/env python
 
-import healpy as hp 
-import numpy as np
-from astropy.io import fits
-from astropy.table import Table
-from configparser import ConfigParser
-from scipy.stats import norm
-#from scipy.special import gammaincinv
-#from scipy.special import gammaincc
-from ligo.skymap import distance
-import requests
 import os
+import healpy as hp #  type: ignore[import]
+import numpy as np
+from astropy.table import Table #  type: ignore[import]
+from configparser import ConfigParser
+from scipy.stats import norm #  type: ignore[import]
+
 
 #defines EventLocalization class to match formatting of tom toolkit model, input into generate_galaxy_list
 #accepts dictionary from ligo_alert.py gwa dictionary
@@ -26,7 +22,7 @@ class EventLocalization(object):
 
 
 
-def generate_galaxy_list(eventlocalization, completeness=None, credzone=None, skymap_filepath=None):
+def generate_galaxy_list(eventlocalization: EventLocalization, completeness=None, credzone=None, skymap_filepath=None):
     """
     An adaptation of the galaxy ranking algorithm described in
     Arcavi et al. 2017 (doi:10.3847/2041-8213/aa910f)
@@ -48,12 +44,12 @@ def generate_galaxy_list(eventlocalization, completeness=None, credzone=None, sk
     nsigmas_in_d = float(galaxy_config.get('GALAXIES', 'NSIGMAS_IN_D')) # Sigmas to consider in distnace (e.g. 3)
     if not completeness:
         completeness = float(galaxy_config.get('GALAXIES', 'COMPLETENESSP')) # Mass fraction completeness (e.g. 0.5)
-    minGalaxies = int(galaxy_config.get('GALAXIES', 'MINGALAXIES')) # Minimum number of galaxies to output (e.g. 100)
+    #minGalaxies = int(galaxy_config.get('GALAXIES', 'MINGALAXIES')) # Minimum number of galaxies to output (e.g. 100)
     
     minL = float(galaxy_config.get('GALAXIES', 'MINL')) # Estimated brightest KN luminosity
     maxL = float(galaxy_config.get('GALAXIES', 'MAXL')) # Estimated faintest KN luminosity
     sensitivity = float(galaxy_config.get('GALAXIES', 'SENSITIVITY')) # Estimatest faintest app mag we can see
-    ngalaxtoshow = int(galaxy_config.get('GALAXIES', 'NGALAXIES')) # Number of galaxies to show
+    #ngalaxtoshow = int(galaxy_config.get('GALAXIES', 'NGALAXIES')) # Number of galaxies to show
     
     mindistFactor = float(galaxy_config.get('GALAXIES', 'MINDISTFACTOR')) #reflecting a small chance that the theory is comletely wrong and we can still see something
     
@@ -177,10 +173,8 @@ def generate_galaxy_list(eventlocalization, completeness=None, credzone=None, sk
     summ = 0
     galaxies50per = 0
     sum_seen = 0
-    enough = True
     while summ<0.5:
         if galaxies50per>= len(ii):
-            enough = False
             break
         summ = summ + (p[ii[galaxies50per]]*massNorm[ii[galaxies50per]])/float(normalization)
         sum_seen = sum_seen + (p[ii[galaxies50per]]*massNorm[ii[galaxies50per]]*distanceFactor[ii[galaxies50per]])/float(normalization)

@@ -24,7 +24,7 @@ except:
 # from find_galaxies import EventLocalization,generate_galaxy_list
 
 
-def listen(config : config, alert, write_to_s3=True, verbose=False, dry_run=False, alertname=None):
+def listen(config : config.Config, alert, write_to_s3=True, verbose=False, dry_run=False, alertname=None):
         
     record = json.loads(alert)
 
@@ -149,6 +149,7 @@ def listen(config : config, alert, write_to_s3=True, verbose=False, dry_run=Fals
             writer.set_skymap(skymap_bytes)
             writer.process(config=config, verbose=verbose)
 
+            post_galaxies_json = None
             try:
                 # create EventLocatlization object to be passed into the galaxies list
                 gwa_obj = fg.EventLocalization(gwa)
@@ -216,9 +217,11 @@ def listen(config : config, alert, write_to_s3=True, verbose=False, dry_run=Fals
 
     if not dry_run:
         gwa = function.post_gwtm_alert(gwa, config=config)
-        #call delete before
-        gal_del = function.delete_galaxy_list(post_galaxies_json, config=config)
-        gal = function.post_galaxy_list(post_galaxies_json, config=config)
+
+        if post_galaxies_json is not None:
+            #call delete before
+            function.delete_galaxy_list(post_galaxies_json, config=config)
+            function.post_galaxy_list(post_galaxies_json, config=config)
         
         if ext_gwa is not None:
             ext_gwa = function.post_gwtm_alert(ext_gwa, config=config)
