@@ -9,7 +9,7 @@ def test_local_file_ingestion():
     listener = gl.listener.Listener(listener_type="LIGO_ALERT")
     alert_dir = "alerts"
     files = os.listdir(os.path.join(os.getcwd(), alert_dir))
-    #files = [x for x in files if 'retraction' in x]
+    files = [x for x in files if 'DS_Store' not in x]
     for f in sorted(files, reverse=True):
         print(f)
         pw = os.path.join(os.getcwd(), alert_dir, f)
