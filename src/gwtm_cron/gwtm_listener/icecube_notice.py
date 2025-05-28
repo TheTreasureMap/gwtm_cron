@@ -1,26 +1,14 @@
 import json
-import datetime
-import requests
-
-import numpy as np
-import astropy_healpix as ah
-
-from base64 import b64decode
-from io import BytesIO
-from astropy.table import Table
-from gcn_kafka import Consumer
-from astropy import units as u
 
 try:
     from . import listener
     from . import gw_config as config
     from . import gw_function as function
-    from . import gw_io as io
-except:
-    import listener
-    import gw_config as config
-    import gw_function as function
-    import gw_io as io
+except ImportError:
+    # If running as a script, import from the parent directory
+    import listener # type: ignore
+    import gw_config as config # type: ignore
+    import gw_function as function # type: ignore
 
 
 def listen(config : config.Config, alert, write_to_s3=True, verbose=False, dry_run=False, alertname=None):
@@ -111,13 +99,13 @@ def listen(config : config.Config, alert, write_to_s3=True, verbose=False, dry_r
 
     if not dry_run and len(icecube_coincident_events):
         print(icecube_notice, icecube_coincident_events)
-        retnotice = function.post_icecube_notice(icecube_notice, icecube_coincident_events, config)
+        function.post_icecube_notice(icecube_notice, icecube_coincident_events, config)
     elif verbose:
         print("Not ingesting")
     
-        return retnotice["icecube_notice"], retnotice["icecube_notice_events"]
+        return icecube_notice, icecube_coincident_events
     return {}, {}
 
 if __name__ == '__main__':
-    l = listener.Listener(listener_type="ICECUBE_NOTICE")
+    l = listener.Listener(listener_type="ICECUBE_NOTICE")  # noqa: E741
     l.run(write_to_s3=True, verbose=True, dry_run=False)

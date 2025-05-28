@@ -1,16 +1,16 @@
 
 
-from gcn_kafka import Consumer
+from gcn_kafka import Consumer # type: ignore
 
 try:
     from . import gw_config as config
     from . import ligo_alert
     from . import icecube_notice
-except:
-    print("import error?")
-    import gw_config as config
-    import ligo_alert
-    import icecube_notice
+except ImportError:
+    # If running as a script, import from the parent directory
+    import gw_config as config # type: ignore
+    import ligo_alert # type: ignore
+    import icecube_notice # type: ignore
 
 LISTENER_TYPES = {
     "LIGO_ALERT" : { 
@@ -26,16 +26,13 @@ LISTENER_TYPES = {
 
 class Listener():
 
-    def __init__(self, listener_type):
+    def __init__(self, listener_type, config_path: str = "home/azureuser/cron/listener_config.json"):
 
         assert listener_type in LISTENER_TYPES.keys(), "Invalid Listener Type"
 
         self.listener_type = listener_type
-        home = "/home/azureuser"
-        #home = "/Users/crisp"
-        conf_path = "/cron/listener_config.json"
 
-        self.config = config.Config(path_to_config=f"{home}{conf_path}")
+        self.config = config.Config(path_to_config=config_path)
 
         self.consumer = Consumer(
             client_id=self.config.KAFKA_CLIENT_ID,
@@ -84,5 +81,5 @@ class Listener():
 
 if __name__ == '__main__':
     atype = "LIGO_ALERT"
-    l = Listener(listener_type=atype)
+    l = Listener(listener_type=atype)  # noqa: E741
     l.run(write_to_s3=False, verbose=True, dry_run=True)

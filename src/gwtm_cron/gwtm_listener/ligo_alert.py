@@ -1,12 +1,12 @@
 import json
 import datetime
-import requests
+import requests # type: ignore
 
 
 from base64 import b64decode
 from io import BytesIO
-from astropy.table import Table
-from astropy import units as u
+from astropy.table import Table # type: ignore
+from astropy import units as u # type: ignore
 
 try:
     from . import listener
@@ -14,12 +14,13 @@ try:
     from . import gw_function as function
     from . import gw_io as io
     from . import find_galaxies as fg
-except:
-    import listener
-    import gw_config as config
-    import gw_function as function
-    import gw_io as io
-    import find_galaxies as fg
+except ImportError:
+    # If running as a script, import from the parent directory
+    import listener # type: ignore
+    import gw_config as config # type: ignore
+    import gw_function as function # type: ignore
+    import gw_io as io # type: ignore
+    import find_galaxies as fg # type: ignore
 
 # from find_galaxies import EventLocalization,generate_galaxy_list
 
@@ -154,7 +155,7 @@ def listen(config : config.Config, alert, write_to_s3=True, verbose=False, dry_r
                 # create EventLocatlization object to be passed into the galaxies list
                 gwa_obj = fg.EventLocalization(gwa)
                 #makes galaxy list, posts to API
-                post_galaxies_json = fg.generate_galaxy_list(gwa_obj)
+                post_galaxies_json = fg.generate_galaxy_list(gwa_obj, galaxy_config_path=config.PATH_TO_GALAXY_CATALOG_CONFIG)
                 
             except Exception as e:
                 print(e)

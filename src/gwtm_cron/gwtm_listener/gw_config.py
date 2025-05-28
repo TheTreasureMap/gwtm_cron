@@ -8,7 +8,7 @@ class Config(object):
         if path_to_config and os.path.exists(path_to_config):
 
             fi = open(path_to_config)
-            data = json.load(fi)
+            data: dict = json.load(fi) 
 
             self.AWS_ACCESS_KEY_ID = data["AWS_ACCESS_KEY_ID"] if "AWS_ACCESS_KEY_ID" in data.keys() else ""
             self.AWS_SECRET_ACCESS_KEY = data["AWS_SECRET_ACCESS_KEY"] if "AWS_SECRET_ACCESS_KEY" in data.keys() else ""
@@ -23,6 +23,7 @@ class Config(object):
             self.OBSERVING_RUN = data["OBSERVING_RUN"] if "OBSERVING_RUN" in data.keys() else "O4"
             self.KAFKA_CLIENT_ID = data["KAFKA_CLIENT_ID"] if "KAFKA_CLIENT_ID" in data.keys() else ""
             self.KAFKA_CLIENT_SECRET = data["KAFKA_CLIENT_SECRET"] if "KAFKA_CLIENT_SECRET" in data.keys() else ""
+            self.PATH_TO_GALAXY_CATALOG_CONFIG = data["PATH_TO_GALAXY_CATALOG_CONFIG"] if "PATH_TO_GALAXY_CATALOG_CONFIG" in data.keys() else "home/azureuser/cron/gal_catalog_config.ini"
         else:
             self.AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID', '')
             self.AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY', '')
@@ -37,4 +38,5 @@ class Config(object):
             self.OBSERVING_RUN = os.environ.get('OBSERVING_RUN', 'O4')
             self.KAFKA_CLIENT_ID = os.environ.get('KAFKA_CLIENT_ID', '')
             self.KAFKA_CLIENT_SECRET = os.environ.get('KAFKA_CLIENT_SECRET', '')
+            self.PATH_TO_GALAXY_CATALOG_CONFIG = os.environ.get("PATH_TO_GALAXY_CATALOG_CONFIG", "home/azureuser/cron/gal_catalog_config.ini")
 
