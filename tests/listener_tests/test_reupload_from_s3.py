@@ -1,15 +1,17 @@
 import sys
-import os
 import tempfile
 import json
-import boto3
+import boto3 # type: ignore
 
 sys.path.insert(0, '../../src/')
 
-import gwtm_cron.gwtm_listener as gl
+import gwtm_cron.gwtm_listener as gl # type: ignore
 
 def test_local_file_ingestion():
-    listener = gl.listener.Listener()
+    listener = gl.listener.Listener(
+        listener_type="LIGO_ALERT",
+        config_path="/Users/sdwyatt/cron/listener_config.json"
+    )
     reader = gl.listener.io.Reader(read_from_s3=True)
 
     s3_resource = boto3.resource('s3')

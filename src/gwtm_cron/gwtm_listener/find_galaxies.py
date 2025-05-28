@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-
-import os
 import healpy as hp #  type: ignore[import]
 import numpy as np
 from astropy.table import Table #  type: ignore[import]
@@ -16,13 +13,13 @@ class EventLocalization(object):
         self.skymap_url = gwa_dict['skymap_fits_url']
         self.graceid = gwa_dict['graceid']
         self.timesent_stamp = gwa_dict['timesent']
-    
+
     def __str__(self):
         return self.graceid
 
 
 
-def generate_galaxy_list(eventlocalization: EventLocalization, completeness=None, credzone=None, skymap_filepath=None):
+def generate_galaxy_list(eventlocalization: EventLocalization, galaxy_config_path: str, completeness=None, credzone=None, skymap_filepath=None):
     """
     An adaptation of the galaxy ranking algorithm described in
     Arcavi et al. 2017 (doi:10.3847/2041-8213/aa910f)
@@ -33,11 +30,10 @@ def generate_galaxy_list(eventlocalization: EventLocalization, completeness=None
     # Parameters:
     try:
         galaxy_config = ConfigParser(inline_comment_prefixes=';')
-        galaxy_config.read(os.path.join(os.getcwd(),'../../gal_catalog_config.ini')) #find_galaxies.py and gal_catalog_config.ini must be in same directory
+        galaxy_config.read(galaxy_config_path)
         catalog_path = galaxy_config.get('GALAXIES', 'CATALOG_PATH') # Path to numpy file containing the galaxy catalog (faster than getting from the db)
     except Exception as e:
         print(e)
-    
     # Matching parameters:
     if not credzone:
         credzone = float(galaxy_config.get('GALAXIES', 'CREDZONE')) # Localization probability to consider credible (e.g. 0.99)

@@ -1,12 +1,12 @@
-import fsspec
+import fsspec  # type: ignore
 
 def _get_fs(source, config):
     try:
         if source == 's3':
-            return fsspec.filesystem(f"s3", key=config.AWS_ACCESS_KEY_ID, secret=config.AWS_SECRET_ACCESS_KEY)
+            return fsspec.filesystem("s3", key=config.AWS_ACCESS_KEY_ID, secret=config.AWS_SECRET_ACCESS_KEY)
         if source == 'abfs':
-            return fsspec.filesystem(f"abfs", account_name=config.AZURE_ACCOUNT_NAME, account_key=config.AZURE_ACCOUNT_KEY)
-    except:
+            return fsspec.filesystem("abfs", account_name=config.AZURE_ACCOUNT_NAME, account_key=config.AZURE_ACCOUNT_KEY)
+    except Exception:
         raise Exception(f"Error in creating {source} filesystem")
 
 
@@ -25,7 +25,7 @@ def download_gwtm_file(filename, source='s3', config=None, decode=True):
             else:
                 return _file.read()
 
-    except:
+    except Exception:
         raise Exception(f"Error reading {source} file: {filename}")
             
 
@@ -84,11 +84,11 @@ if __name__ == '__main__':
     import os
     config = test_config()
 
-    config.AZURE_ACCOUNT_NAME = os.environ.get('AZURE_ACCOUNT_NAME', None)
-    config.AZURE_ACCOUNT_KEY = os.environ.get("AZURE_ACCOUNT_KEY", None)
-    config.AWS_BUCKET = os.environ.get("AWS_BUCKET", None)
-    config.AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID', None)
-    config.AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY', None)
+    config.AZURE_ACCOUNT_NAME = os.environ.get('AZURE_ACCOUNT_NAME', None) # type: ignore
+    config.AZURE_ACCOUNT_KEY = os.environ.get("AZURE_ACCOUNT_KEY", None) # type: ignore
+    config.AWS_BUCKET = os.environ.get("AWS_BUCKET", None) # type: ignore
+    config.AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID', None) # type: ignore
+    config.AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY', None) # type: ignore
 
     bucket_sources = ["s3", "abfs"]
     for source in bucket_sources:

@@ -1,16 +1,15 @@
-import io
 import datetime
 import os
 import json
-import ligo.skymap
-import ligo.skymap.io
-import ligo.skymap.postprocess
+import ligo.skymap  # type: ignore
+import ligo.skymap.io  # type: ignore
+import ligo.skymap.postprocess  # type: ignore
 import tempfile
-import requests
+import requests  # type: ignore
 
-from ligo.skymap.healpix_tree import interpolate_nested
-from astropy.coordinates import SkyCoord
-from mocpy import MOC
+from ligo.skymap.healpix_tree import interpolate_nested  # type: ignore
+from astropy.coordinates import SkyCoord  # type: ignore
+from mocpy import MOC  # type: ignore
 
 import numpy as np
 
@@ -18,10 +17,11 @@ try:
     from . import gw_function as function
     from . import gw_config as config
     from . import gwstorage
-except:
-    import gw_function as function
-    import gw_config as config
-    import gwstorage
+except ImportError:
+    # If running as a script, import from the parent directory
+    import gw_function as function  # type: ignore
+    import gw_config as config  # type: ignore
+    import gwstorage  # type: ignore
 
 class Writer():
     
@@ -41,7 +41,7 @@ class Writer():
 
         self.skymap = None
         self.path_info = None
-        self.gwalert_dict = None
+        self.gwalert_dict: dict = {}
 
         if not write_to_s3:
             paths = [
@@ -87,7 +87,7 @@ class Writer():
 
         try:
             r = requests.get(self.gwalert_dict['skymap_fits_url'])
-        except:
+        except Exception:
             print(f"Bad skymap URL! {self.gwalert_dict['skymap_fits_url']} Gracedb might be bogged")
             return
         
@@ -116,7 +116,7 @@ class Writer():
                 print('Writing skymap_moc.fits.gz to local')
             local_write_path = os.path.join(os.getcwd(), 'skymaps', f"{self.path_info}_moc.fits.gz")
             with open(local_write_path, 'wb') as f:
-                f.write(self.skymap)
+                f.write(self.skymap) #type: ignore
 
 
     def _write_contours(self, config: config.Config, verbose=False):
@@ -126,7 +126,7 @@ class Writer():
 
         tmp = tempfile.NamedTemporaryFile()
         with open(tmp.name, 'wb') as f:
-            f.write(self.skymap)
+            f.write(self.skymap)  #type: ignore
 
         prob, _ = ligo.skymap.io.fits.read_sky_map(tmp.name, nest=None)
         prob = interpolate_nested(prob, nest=True)
@@ -182,7 +182,7 @@ class Writer():
             moc = moc.complement()
             mocfootprint = moc.serialize(format='json')
             moc_string = json.dumps(mocfootprint)
-        except:
+        except Exception:
             print("Error in Fermi MOC creation")
             return
 
@@ -221,7 +221,7 @@ class Writer():
             moc = MOC.from_polygon_skycoord(skycoord, max_depth=9)
             mocfootprint = moc.serialize(format='json')
             moc_string = json.dumps(mocfootprint)
-        except:
+        except Exception:
             print("Error in LAT creation")
             return
 
@@ -286,5 +286,5 @@ class Reader():
                 f = gwstorage.download_gwtm_file(alert_path_name, config.STORAGE_BUCKET_SOURCE, config)
                 data = json.loads(f)
                 return data
-            except:
+            except Exception:
                 print('Error in s3 download, file might not exist')
