@@ -81,8 +81,8 @@ def listen(config : config.Config, alert, write_to_s3=True, verbose=False, dry_r
                 event_record.update({
                     "ra" : localization["ra"] if "ra" in localization_keys else -999,
                     "dec" : localization["dec"] if "dec" in localization_keys else -999,
-                    "uncertainty_shape" : localization["uncertainty_shape"] if "uncertainty_shape" in localization_keys else "ERROR",
-                    "ra_uncertainty" : localization["ra_uncertainty"] if "ra_uncertainty" in localization_keys else -999,
+                    "uncertainty_shape" : "circle",
+                    "ra_uncertainty" : localization["ra_dec_error"] if "ra_dec_error" in localization_keys else -999,
                     "containment_probability" : localization["containment_probability"] if "containment_probability" in localization_keys else 0.0,
                 })
             
