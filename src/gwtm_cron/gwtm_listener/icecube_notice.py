@@ -92,9 +92,6 @@ def listen(config : config.Config, alert, write_to_s3=True, verbose=False, dry_r
             if event_record["event_pval_generic"] == 'null':
                 event_record["event_pval_generic"] = 0.0
 
-            if isinstance(event_record["ra_uncertainty"], list):
-                event_record["ra_uncertainty"] = event_record["ra_uncertainty"][0]
-
             icecube_coincident_events.append(event_record)
 
     if not dry_run and len(icecube_coincident_events):
