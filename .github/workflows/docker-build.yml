@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+      - dockerise
     tags:
       - 'v*'
   pull_request:
