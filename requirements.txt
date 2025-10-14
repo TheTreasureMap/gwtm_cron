@@ -1,13 +1,33 @@
-numpy
-astropy_healpix
-gcn_kafka
-ephem
-bs4
-shapely
-ligo.skymap
-boto3
-mocpy
-lxml
-werkzeug
-fsspec
-adlfs
+# Core scientific computing
+numpy>=1.24.0,<2.0.0
+astropy-healpix>=1.0.0
+
+# GCN Kafka alert streaming
+gcn-kafka>=0.3.0
+
+# Astronomical calculations
+ephem>=4.1.0
+
+# Web scraping and parsing
+beautifulsoup4>=4.11.0
+lxml>=4.9.0
+
+# Geospatial
+shapely>=2.0.0
+
+# LIGO/Virgo/KAGRA skymap processing
+ligo.skymap>=1.0.0
+
+# Cloud storage backends
+boto3>=1.26.0  # AWS S3
+adlfs>=2023.1.0  # Azure Blob Storage
+python-swiftclient>=4.0.0  # OpenStack Swift
+
+# Multi-cloud filesystem abstraction
+fsspec>=2023.1.0
+
+# MOC (Multi-Order Coverage) support
+mocpy>=0.12.0
+
+# Utilities
+werkzeug>=2.3.0

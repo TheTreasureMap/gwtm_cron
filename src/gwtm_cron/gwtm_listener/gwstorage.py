@@ -6,8 +6,19 @@ def _get_fs(source, config):
             return fsspec.filesystem("s3", key=config.AWS_ACCESS_KEY_ID, secret=config.AWS_SECRET_ACCESS_KEY)
         if source == 'abfs':
             return fsspec.filesystem("abfs", account_name=config.AZURE_ACCOUNT_NAME, account_key=config.AZURE_ACCOUNT_KEY)
-    except Exception:
-        raise Exception(f"Error in creating {source} filesystem")
+        if source == 'swift':
+            return fsspec.filesystem(
+                "swift",
+                auth_version="3",
+                user=config.OS_USERNAME,
+                key=config.OS_PASSWORD,
+                authurl=config.OS_AUTH_URL,
+                tenant_name=config.OS_PROJECT_NAME,
+                user_domain_name=config.OS_USER_DOMAIN_NAME,
+                project_domain_name=config.OS_PROJECT_DOMAIN_NAME
+            )
+    except Exception as e:
+        raise Exception(f"Error in creating {source} filesystem: {str(e)}")
 
 
 def download_gwtm_file(filename, source='s3', config=None, decode=True):
@@ -18,6 +29,10 @@ def download_gwtm_file(filename, source='s3', config=None, decode=True):
 
         if source == 'abfs':
             s3file = fsspec.open(f"abfs://{filename}", "rb", account_name=config.AZURE_ACCOUNT_NAME, account_key=config.AZURE_ACCOUNT_KEY)
+
+        if source == 'swift':
+            fs = _get_fs(source=source, config=config)
+            s3file = fs.open(f"{config.OS_CONTAINER_NAME}/{filename}", "rb")
 
         with s3file as _file:
             if decode:
@@ -36,7 +51,10 @@ def upload_gwtm_file(content, filename, source="s3", config=None):
     if source=="s3" and f"{config.AWS_BUCKET}/" not in filename:
         filename = f"{config.AWS_BUCKET}/{filename}"
 
-    open_file = fs.open(filename, "wb") 
+    if source=="swift" and f"{config.OS_CONTAINER_NAME}/" not in filename:
+        filename = f"{config.OS_CONTAINER_NAME}/{filename}"
+
+    open_file = fs.open(filename, "wb")
     with open_file as of:
         of.write(content)
     of.close()
@@ -53,7 +71,16 @@ def list_gwtm_bucket(container, source="s3", config=None):
             if split_b != f"{container}/":
                 ret.append(split_b)
         return sorted(ret)
-    
+
+    if source == 'swift':
+        bucket_content = fs.ls(f"{config.OS_CONTAINER_NAME}/{container}")
+        ret = []
+        for b in bucket_content:
+            split_b = b.split(f"{config.OS_CONTAINER_NAME}/")[1]
+            if split_b != f"{container}/":
+                ret.append(split_b)
+        return sorted(ret)
+
     ret = fs.ls(container)
     return sorted(ret)
 
@@ -66,7 +93,15 @@ def delete_gwtm_files(keys, source="s3", config=None):
                     keys[i] = f"{config.AWS_BUCKET}/{k}"
         if isinstance(keys, str) and f"{config.AWS_BUCKET}/" not in keys:
             keys = f"{config.AWS_BUCKET}/{keys}"
-    
+
+    if source=="swift":
+        if isinstance(keys, list):
+            for i,k in enumerate(keys):
+                if f"{config.OS_CONTAINER_NAME}/" not in k:
+                    keys[i] = f"{config.OS_CONTAINER_NAME}/{k}"
+        if isinstance(keys, str) and f"{config.OS_CONTAINER_NAME}/" not in keys:
+            keys = f"{config.OS_CONTAINER_NAME}/{keys}"
+
     fs = _get_fs(source=source, config=config)
     fs.rm(keys)
     return True
