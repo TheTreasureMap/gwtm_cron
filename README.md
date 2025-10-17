@@ -6,6 +6,34 @@ Gravitational Wave Treasure Map cron functions - a Kafka-based listener system f
 
 **Requirements**: Python 3.11+
 
+## How It Works
+
+The listeners are **real-time streaming processors** that:
+
+1. **Subscribe to NASA GCN Kafka streams**
+   - LIGO Listener: `igwn.gwalert` topic for gravitational wave detections
+   - IceCube Listener: `gcn.notices.icecube.lvk_nu_track_search` for neutrino coincidences
+
+2. **Process each alert** as it arrives (typically within seconds of detection):
+   - Parse alert JSON and extract metadata (event ID, classification, instruments)
+   - Decode and analyze probability skymaps (FITS format)
+   - Calculate sky localization statistics (90%/50% credible areas, average position)
+   - Generate derived products:
+     - Sky contours (GeoJSON for visualization)
+     - MOC (Multi-Order Coverage) files
+     - Satellite visibility maps (Fermi, LAT)
+   - Query galaxy catalogs to identify potential host galaxies
+
+3. **Store products** to cloud storage (S3/Azure/OpenStack Swift):
+   - Raw alert JSON
+   - Processed FITS skymaps
+   - Visualization-ready contours and maps
+   - One event can produce 5-10 files as it evolves (Early Warning → Preliminary → Update)
+
+4. **POST to GWTM API** for public consumption by astronomers worldwide
+
+**Important**: Listeners only process **new alerts** that arrive after they start. Historical alerts are not backfilled. If you start with empty storage, it will remain empty until the next gravitational wave or neutrino detection is announced.
+
 ## Quick Start
 
 ### Docker Compose (Local Development)
@@ -72,6 +100,19 @@ The following environment variables are required for Docker/Kubernetes/Helm depl
 
 - `OBSERVING_RUN` - Observing run identifier (default: `O4`)
 - `PATH_TO_GALAXY_CATALOG_CONFIG` - Path to galaxy catalog config file (only needed for LIGO listener if generating galaxy lists)
+
+### Listener Control Variables
+
+- `DRY_RUN` - Set to `true` or `1` to run in dry-run mode (no API calls, no storage writes)
+- `WRITE_TO_STORAGE` - Set to `false` or `0` to disable storage writes (default: `true`)
+- `VERBOSE` - Set to `false` or `0` to disable verbose logging (default: `true`)
+
+**Note**: Storage type (S3, Azure, Swift) is controlled by `STORAGE_BUCKET_SOURCE`, not by `WRITE_TO_STORAGE`.
+
+### Logging Configuration
+
+- `LOG_FORMAT` - Set to `json` to enable structured JSON logging for Kubernetes (default: print statements)
+- `LOG_LEVEL` - Set log level: `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL` (default: `INFO`)
 
 ### Example Kubernetes/Helm Values
 

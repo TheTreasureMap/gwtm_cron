@@ -25,7 +25,9 @@ class Config(object):
             self.OS_CONTAINER_NAME = data["OS_CONTAINER_NAME"] if "OS_CONTAINER_NAME" in data.keys() else "gwtreasuremap"
             self.STORAGE_BUCKET_SOURCE = data["STORAGE_BUCKET_SOURCE"] if "STORAGE_BUCKET_SOURCE" in data.keys() else "abfs"
             self.API_TOKEN = data["API_TOKEN"] if "API_TOKEN" in data.keys() else ""
-            self.API_BASE = data["API_BASE"] if "API_BASE" in data.keys() else "http://127.0.0.1:5000/api/v0/"
+            # Default to Kubernetes service if KUBERNETES_SERVICE_HOST is set, otherwise localhost
+            default_api_base = "http://gwtm-api:5000/api/v0/" if os.environ.get('KUBERNETES_SERVICE_HOST') else "http://127.0.0.1:5000/api/v0/"
+            self.API_BASE = data["API_BASE"] if "API_BASE" in data.keys() else default_api_base
             self.ALERT_DOMAIN = data["ALERT_DOMAIN"] if "ALERT_DOMAIN" in data.keys() else "igwn.gwalert"
             self.OBSERVING_RUN = data["OBSERVING_RUN"] if "OBSERVING_RUN" in data.keys() else "O4"
             self.KAFKA_CLIENT_ID = data["KAFKA_CLIENT_ID"] if "KAFKA_CLIENT_ID" in data.keys() else ""
@@ -47,7 +49,9 @@ class Config(object):
             self.OS_CONTAINER_NAME = os.environ.get('OS_CONTAINER_NAME', 'gwtreasuremap')
             self.STORAGE_BUCKET_SOURCE = os.environ.get('STORAGE_BUCKET_SOURCE', 'abfs')
             self.API_TOKEN = os.environ.get('API_TOKEN', '')
-            self.API_BASE = os.environ.get('API_BASE', 'http://127.0.0.1:5000/api/v0/')
+            # Default to Kubernetes service if KUBERNETES_SERVICE_HOST is set, otherwise localhost
+            default_api_base = "http://gwtm-api:5000/api/v0/" if os.environ.get('KUBERNETES_SERVICE_HOST') else "http://127.0.0.1:5000/api/v0/"
+            self.API_BASE = os.environ.get('API_BASE', default_api_base)
             self.ALERT_DOMAIN = os.environ.get('ALERT_DOMAIN', 'igwn.gwalert')
             self.OBSERVING_RUN = os.environ.get('OBSERVING_RUN', 'O4')
             self.KAFKA_CLIENT_ID = os.environ.get('KAFKA_CLIENT_ID', '')

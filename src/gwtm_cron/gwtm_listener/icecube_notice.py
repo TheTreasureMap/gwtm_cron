@@ -11,7 +11,7 @@ except ImportError:
     import gw_function as function # type: ignore
 
 
-def listen(config : config.Config, alert, write_to_s3=True, verbose=False, dry_run=False, alertname=None):
+def listen(config : config.Config, alert, write_to_storage=True, verbose=False, dry_run=False, alertname=None):
 
     record = json.loads(alert)
     rkeys = record.keys()
@@ -105,4 +105,4 @@ def listen(config : config.Config, alert, write_to_s3=True, verbose=False, dry_r
 
 if __name__ == '__main__':
     l = listener.Listener(listener_type="ICECUBE_NOTICE")  # noqa: E741
-    l.run(write_to_s3=True, verbose=True, dry_run=False)
+    l.run(write_to_storage=True, verbose=True, dry_run=False)

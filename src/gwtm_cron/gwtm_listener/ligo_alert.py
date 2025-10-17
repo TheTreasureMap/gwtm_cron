@@ -25,8 +25,8 @@ except ImportError:
 # from find_galaxies import EventLocalization,generate_galaxy_list
 
 
-def listen(config : config.Config, alert, write_to_s3=True, verbose=False, dry_run=False, alertname=None):
-        
+def listen(config : config.Config, alert, write_to_storage=True, verbose=False, dry_run=False, alertname=None):
+
     record = json.loads(alert)
 
     run_test = True
@@ -39,7 +39,7 @@ def listen(config : config.Config, alert, write_to_s3=True, verbose=False, dry_r
     writer = io.Writer(
         alert=alert,
         s3path=s3path,
-        write_to_s3=write_to_s3
+        write_to_storage=write_to_storage
     )
 
     gwa = {}
@@ -234,4 +234,4 @@ def listen(config : config.Config, alert, write_to_s3=True, verbose=False, dry_r
 
 if __name__ == '__main__':
     l = listener.Listener(listener_type="LIGO_ALERT")
-    l.run(write_to_s3=True, verbose=True, dry_run=False)
+    l.run(write_to_storage=True, verbose=True, dry_run=False)
