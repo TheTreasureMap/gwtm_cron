@@ -23,6 +23,7 @@ class Config(object):
             self.OS_USER_DOMAIN_NAME = data["OS_USER_DOMAIN_NAME"] if "OS_USER_DOMAIN_NAME" in data.keys() else "Default"
             self.OS_PROJECT_DOMAIN_NAME = data["OS_PROJECT_DOMAIN_NAME"] if "OS_PROJECT_DOMAIN_NAME" in data.keys() else "Default"
             self.OS_CONTAINER_NAME = data["OS_CONTAINER_NAME"] if "OS_CONTAINER_NAME" in data.keys() else "gwtreasuremap"
+            self.OS_STORAGE_URL = data["OS_STORAGE_URL"] if "OS_STORAGE_URL" in data.keys() else ""
             self.STORAGE_BUCKET_SOURCE = data["STORAGE_BUCKET_SOURCE"] if "STORAGE_BUCKET_SOURCE" in data.keys() else "abfs"
             self.API_TOKEN = data["API_TOKEN"] if "API_TOKEN" in data.keys() else ""
             # Default to Kubernetes service if KUBERNETES_SERVICE_HOST is set, otherwise localhost
@@ -47,6 +48,7 @@ class Config(object):
             self.OS_USER_DOMAIN_NAME = os.environ.get('OS_USER_DOMAIN_NAME', 'Default')
             self.OS_PROJECT_DOMAIN_NAME = os.environ.get('OS_PROJECT_DOMAIN_NAME', 'Default')
             self.OS_CONTAINER_NAME = os.environ.get('OS_CONTAINER_NAME', 'gwtreasuremap')
+            self.OS_STORAGE_URL = os.environ.get('OS_STORAGE_URL', '')
             self.STORAGE_BUCKET_SOURCE = os.environ.get('STORAGE_BUCKET_SOURCE', 'abfs')
             self.API_TOKEN = os.environ.get('API_TOKEN', '')
             # Default to Kubernetes service if KUBERNETES_SERVICE_HOST is set, otherwise localhost
