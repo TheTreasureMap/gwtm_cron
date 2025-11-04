@@ -47,7 +47,7 @@ def format_time(seconds):
         return str(timedelta(seconds=int(seconds)))
 
 
-def migrate_container(source, dest, container, config, dry_run=False, verbose=True):
+def migrate_container(source, dest, container, config, dry_run=False, verbose=True, skip_existing=True):
     """
     Migrate all files from one storage backend to another.
 
@@ -58,6 +58,7 @@ def migrate_container(source, dest, container, config, dry_run=False, verbose=Tr
         config: Config object with credentials
         dry_run: If True, only list files without transferring
         verbose: Print progress messages
+        skip_existing: If True, skip files that already exist in destination
     """
     if verbose:
         print(f"{'DRY RUN: ' if dry_run else ''}Migrating container '{container}' from {source} to {dest}")
@@ -70,6 +71,28 @@ def migrate_container(source, dest, container, config, dry_run=False, verbose=Tr
         if verbose:
             print(f"Scanning source ({source})...")
         files = gwstorage.list_gwtm_bucket(container, source=source, config=config)
+
+        # List existing files in destination if skip_existing is enabled
+        existing_files = set()
+        if skip_existing:
+            if verbose:
+                print(f"Scanning destination ({dest})...")
+            try:
+                existing_files = set(gwstorage.list_gwtm_bucket(container, source=dest, config=config))
+                if verbose:
+                    print(f"Found {len(existing_files)} existing files in destination")
+            except Exception as e:
+                if verbose:
+                    print(f"Warning: Could not list destination files ({e}), will transfer all files")
+                existing_files = set()
+
+        # Filter out files that already exist
+        if skip_existing and existing_files:
+            files_to_migrate = [f for f in files if f not in existing_files]
+            skipped_count = len(files) - len(files_to_migrate)
+            if verbose:
+                print(f"Skipping {skipped_count} files that already exist in destination")
+            files = files_to_migrate
 
         # Calculate total size by sampling files
         if verbose:
@@ -246,6 +269,8 @@ Environment Variables Required:
                         help="List files without actually migrating them")
     parser.add_argument("--quiet", action="store_true",
                         help="Suppress progress output")
+    parser.add_argument("--force", action="store_true",
+                        help="Re-transfer all files, even if they already exist in destination")
 
     args = parser.parse_args()
 
@@ -281,7 +306,8 @@ Environment Variables Required:
             container=args.container,
             config=config,
             dry_run=args.dry_run,
-            verbose=not args.quiet
+            verbose=not args.quiet,
+            skip_existing=not args.force
         )
 
         if args.dry_run and not args.quiet:

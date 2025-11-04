@@ -49,26 +49,37 @@ class Listener():
         # KAFKA_OFFSET_RESET controls where to start reading from:
         # - 'latest' (default): Only new messages arriving after consumer starts
         # - 'earliest': Read from the oldest available message in the buffer (past few days)
-        kafka_config = {}
-        offset_reset = os.environ.get('KAFKA_OFFSET_RESET', 'latest').lower()
-        if offset_reset in ['earliest', 'latest']:
-            kafka_config['auto.offset.reset'] = offset_reset
-            if self.use_json_logging:
-                self.logger.info(f"Kafka offset reset policy: {offset_reset}")
-            else:
-                print(f"Kafka offset reset policy: {offset_reset}")
-
-        # Optionally set group.id for persistent offset tracking
+        kafka_config = None
+        offset_reset = os.environ.get('KAFKA_OFFSET_RESET', '').lower()
         kafka_group_id = os.environ.get('KAFKA_GROUP_ID', '')
-        if kafka_group_id:
-            kafka_config['group.id'] = kafka_group_id
+
+        # Only create config dict if we have custom settings
+        # Note: Passing config may override gcn-kafka defaults, so only do it when necessary
+        if offset_reset == 'earliest' or kafka_group_id:
+            kafka_config = {}
+            # Only set offset reset if explicitly set to 'earliest' (gcn-kafka defaults to 'latest')
+            if offset_reset == 'earliest':
+                kafka_config['auto.offset.reset'] = 'earliest'
+                if self.use_json_logging:
+                    self.logger.info(f"Kafka offset reset policy: earliest")
+                else:
+                    print(f"Kafka offset reset policy: earliest")
+
+            if kafka_group_id:
+                kafka_config['group.id'] = kafka_group_id
+                if self.use_json_logging:
+                    self.logger.info(f"Kafka group ID: {kafka_group_id}")
+                else:
+                    print(f"Kafka group ID: {kafka_group_id}")
+        else:
+            # No custom config - let gcn-kafka use defaults
             if self.use_json_logging:
-                self.logger.info(f"Kafka group ID: {kafka_group_id}")
+                self.logger.info("Using default Kafka consumer configuration")
             else:
-                print(f"Kafka group ID: {kafka_group_id}")
+                print("Using default Kafka consumer configuration")
 
         self.consumer = Consumer(
-            config=kafka_config if kafka_config else None,
+            config=kafka_config,
             client_id=self.config.KAFKA_CLIENT_ID,
             client_secret=self.config.KAFKA_CLIENT_SECRET
         )
