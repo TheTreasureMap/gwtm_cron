@@ -30,6 +30,8 @@ services:
       # Kafka Configuration
       - KAFKA_CLIENT_ID
       - KAFKA_CLIENT_SECRET
+      - KAFKA_OFFSET_RESET  # 'latest' (default) or 'earliest' to replay buffered messages
+      - KAFKA_GROUP_ID  # Optional: set group ID for persistent offset tracking
       # Observing Run Configuration
       - OBSERVING_RUN
       # Galaxy Catalog Configuration (optional, for galaxy list generation)
@@ -64,5 +66,7 @@ services:
       # Kafka Configuration
       - KAFKA_CLIENT_ID
       - KAFKA_CLIENT_SECRET
+      - KAFKA_OFFSET_RESET  # 'latest' (default) or 'earliest' to replay buffered messages
+      - KAFKA_GROUP_ID  # Optional: set group ID for persistent offset tracking
       # Observing Run Configuration
       - OBSERVING_RUN

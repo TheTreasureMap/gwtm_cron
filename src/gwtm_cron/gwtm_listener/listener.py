@@ -45,7 +45,30 @@ class Listener():
 
         self.config = config.Config(path_to_config=config_path)
 
+        # Kafka consumer configuration
+        # KAFKA_OFFSET_RESET controls where to start reading from:
+        # - 'latest' (default): Only new messages arriving after consumer starts
+        # - 'earliest': Read from the oldest available message in the buffer (past few days)
+        kafka_config = {}
+        offset_reset = os.environ.get('KAFKA_OFFSET_RESET', 'latest').lower()
+        if offset_reset in ['earliest', 'latest']:
+            kafka_config['auto.offset.reset'] = offset_reset
+            if self.use_json_logging:
+                self.logger.info(f"Kafka offset reset policy: {offset_reset}")
+            else:
+                print(f"Kafka offset reset policy: {offset_reset}")
+
+        # Optionally set group.id for persistent offset tracking
+        kafka_group_id = os.environ.get('KAFKA_GROUP_ID', '')
+        if kafka_group_id:
+            kafka_config['group.id'] = kafka_group_id
+            if self.use_json_logging:
+                self.logger.info(f"Kafka group ID: {kafka_group_id}")
+            else:
+                print(f"Kafka group ID: {kafka_group_id}")
+
         self.consumer = Consumer(
+            config=kafka_config if kafka_config else None,
             client_id=self.config.KAFKA_CLIENT_ID,
             client_secret=self.config.KAFKA_CLIENT_SECRET
         )

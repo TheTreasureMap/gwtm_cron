@@ -10,4 +10,7 @@ RUN pip install -r requirements.txt
 
 COPY . /app
 
+# Install the gwtm_cron package
+RUN pip install -e .
+
 CMD ["python", "src/gwtm_cron/gwtm_listener/listener.py"]
