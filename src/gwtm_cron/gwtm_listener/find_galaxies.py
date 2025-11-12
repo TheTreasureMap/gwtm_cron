@@ -45,7 +45,7 @@ def generate_galaxy_list(eventlocalization: EventLocalization, galaxy_config_pat
     minL = float(galaxy_config.get('GALAXIES', 'MINL')) # Estimated brightest KN luminosity
     maxL = float(galaxy_config.get('GALAXIES', 'MAXL')) # Estimated faintest KN luminosity
     sensitivity = float(galaxy_config.get('GALAXIES', 'SENSITIVITY')) # Estimatest faintest app mag we can see
-    #ngalaxtoshow = int(galaxy_config.get('GALAXIES', 'NGALAXIES')) # Number of galaxies to show
+    ngalaxtoshow = int(galaxy_config.get('GALAXIES', 'NGALAXIES')) # Number of galaxies to show
     
     mindistFactor = float(galaxy_config.get('GALAXIES', 'MINDISTFACTOR')) #reflecting a small chance that the theory is comletely wrong and we can still see something
     
@@ -178,10 +178,10 @@ def generate_galaxy_list(eventlocalization: EventLocalization, galaxy_config_pat
 
     #if want to limit by number of galaxies in .ini file
 
-    # if len(ii) > ngalaxtoshow:
-    #     n = ngalaxtoshow
-    # else:
-    #     n = len(ii)
+    if len(ii) > ngalaxtoshow:
+        n = ngalaxtoshow
+    else:
+        n = len(ii)
 
     score=(p * massNorm / normalization)
     ra=galaxies['ra']
@@ -194,7 +194,7 @@ def generate_galaxy_list(eventlocalization: EventLocalization, galaxy_config_pat
 
     iter = ii.tolist()
     galaxy_list = []
-    for i in range(len(iter)):
+    for i in range(n):
         ind = iter[i]
         galaxy_list.append({
             "ra":ra[ind],
