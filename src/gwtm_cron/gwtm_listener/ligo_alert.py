@@ -223,12 +223,12 @@ def listen(config : config.Config, alert, write_to_storage=True, verbose=False, 
             #call delete before
             function.delete_galaxy_list(post_galaxies_json, config=config)
             function.post_galaxy_list(post_galaxies_json, config=config)
-        
+
         if ext_gwa is not None:
             ext_gwa = function.post_gwtm_alert(ext_gwa, config=config)
-    
-    if run_test:
-        function.del_test_alerts(config=config)
+
+        if run_test:
+            function.del_test_alerts(config=config)
 
     return gwa, ext_gwa
 
