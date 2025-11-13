@@ -13,6 +13,26 @@ from mocpy import MOC  # type: ignore
 
 import numpy as np
 
+
+def parse_datetime_flexible(datetime_str):
+    """
+    Parse datetime string with or without fractional seconds.
+    Handles both formats: '2023-01-01T12:34:56.123456' and '2023-01-01T12:34:56'
+    """
+    formats = [
+        "%Y-%m-%dT%H:%M:%S.%f",  # With fractional seconds
+        "%Y-%m-%dT%H:%M:%S",     # Without fractional seconds
+    ]
+
+    for fmt in formats:
+        try:
+            return datetime.datetime.strptime(datetime_str, fmt)
+        except ValueError:
+            continue
+
+    # If none work, raise the error
+    raise ValueError(f"Unable to parse datetime string: {datetime_str}")
+
 try:
     from . import gw_function as function
     from . import gw_config as config
@@ -92,8 +112,9 @@ class Writer():
             return
         
         if self.write_to_s3:
+            storage_name = "S3" if config.STORAGE_BUCKET_SOURCE == "s3" else "Azure Blob Storage"
             if verbose:
-                print('Writing skymap.fits.gz to s3')
+                print(f'Writing skymap.fits.gz to {storage_name}')
             downloadpath = '{}/{}.fits.gz'.format(self.s3path, self.path_info)
             gwstorage.upload_gwtm_file(r.content, downloadpath, source=config.STORAGE_BUCKET_SOURCE, config=config)
         else:
@@ -107,8 +128,9 @@ class Writer():
     def _write_skymap_moc(self, config: config.Config, verbose=False):
 
         if self.write_to_s3:
+            storage_name = "S3" if config.STORAGE_BUCKET_SOURCE == "s3" else "Azure Blob Storage"
             if verbose:
-                print('Writing skymap_moc.fits.gz to s3')
+                print(f'Writing skymap_moc.fits.gz to {storage_name}')
             downloadpath = '{}/{}_moc.fits.gz'.format(self.s3path, self.path_info)
             gwstorage.upload_gwtm_file(self.skymap, downloadpath, source=config.STORAGE_BUCKET_SOURCE, config=config)
         else:
@@ -154,8 +176,9 @@ class Writer():
         })
 
         if self.write_to_s3:
+            storage_name = "S3" if config.STORAGE_BUCKET_SOURCE == "s3" else "Azure Blob Storage"
             if verbose:
-                print('Writing contours to s3')
+                print(f'Writing contours to {storage_name}')
 
             contour_download_path = '{}/{}-contours-smooth.json'.format(self.s3path, self.path_info)
             gwstorage.upload_gwtm_file(contours_json.encode(), contour_download_path, config.STORAGE_BUCKET_SOURCE, config)
@@ -173,7 +196,7 @@ class Writer():
             print('Calculating Fermi contour map')
 
         try:
-            tos = datetime.datetime.strptime(self.gwalert_dict["time_of_signal"], "%Y-%m-%dT%H:%M:%S.%f")
+            tos = parse_datetime_flexible(self.gwalert_dict["time_of_signal"])
             earth_ra,earth_dec,earth_rad=function.getearthsatpos(tos)
             contour = function.makeEarthContour(earth_ra,earth_dec,earth_rad)
             skycoord = SkyCoord(contour, unit="deg", frame="icrs")
@@ -187,8 +210,9 @@ class Writer():
             return
 
         if self.write_to_s3:
+            storage_name = "S3" if config.STORAGE_BUCKET_SOURCE == "s3" else "Azure Blob Storage"
             if verbose:
-                print('Writing Fermi contour to s3')
+                print(f'Writing Fermi contour to {storage_name}')
             fermi_moc_upload_path = '{}/{}-Fermi.json'.format(self.s3path, self.gwalert_dict["graceid"])
             dir_contents = gwstorage.list_gwtm_bucket(self.s3path, config.STORAGE_BUCKET_SOURCE, config)
             if fermi_moc_upload_path not in dir_contents:
@@ -200,7 +224,7 @@ class Writer():
                 if verbose:
                     print('Fermi File already exists')
                 return
-            
+
             if verbose:
                 print('Writing Fermi contour to local')
 
@@ -209,11 +233,11 @@ class Writer():
 
 
     def _write_LAT(self, config: config.Config, verbose=False):
-        
+
         if verbose:
             print('Calculating LAT contours')
 
-        tos = datetime.datetime.strptime(self.gwalert_dict["time_of_signal"], "%Y-%m-%dT%H:%M:%S.%f")
+        tos = parse_datetime_flexible(self.gwalert_dict["time_of_signal"])
         try:
             ra, dec = function.getFermiPointing(tos)
             pointing_footprint= function.makeLATFoV(ra,dec)
@@ -226,21 +250,22 @@ class Writer():
             return
 
         if self.write_to_s3:
+            storage_name = "S3" if config.STORAGE_BUCKET_SOURCE == "s3" else "Azure Blob Storage"
             if verbose:
-                print('Writing LAT contour to s3')
+                print(f'Writing LAT contour to {storage_name}')
 
             lat_moc_upload_path = '{}/{}-LAT.json'.format(self.s3path, self.gwalert_dict["graceid"])
             dir_contents = gwstorage.list_gwtm_bucket(self.s3path, config.STORAGE_BUCKET_SOURCE, config)
             if lat_moc_upload_path not in dir_contents:
                 gwstorage.upload_gwtm_file(moc_string.encode(), lat_moc_upload_path, config.STORAGE_BUCKET_SOURCE, config)
-        
+
         else:
             local_write_file = os.path.join(os.getcwd(), "contours", f"{self.gwalert_dict['graceid']}-LAT.json")
             if os.path.exists(local_write_file):
                 if verbose:
                     print('LAT File already exists')
                 return
-            
+
             if verbose:
                 print('Writing LAT contour to local')
 
@@ -255,8 +280,9 @@ class Writer():
 
 
         if self.write_to_s3:
+            storage_name = "S3" if config.STORAGE_BUCKET_SOURCE == "s3" else "Azure Blob Storage"
             if verbose:
-                print("Writing alert json to s3")
+                print(f"Writing alert json to {storage_name}")
 
             alert_upload_path = os.path.join(self.s3path, f"{self.path_info}_alert.json")
             dir_contents = gwstorage.list_gwtm_bucket(self.s3path, config.STORAGE_BUCKET_SOURCE, config)
