@@ -4,7 +4,6 @@ import json
 class Config(object):
 
     def __init__(self, path_to_config=None):
-        print(path_to_config)
         if path_to_config and os.path.exists(path_to_config):
 
             fi = open(path_to_config)

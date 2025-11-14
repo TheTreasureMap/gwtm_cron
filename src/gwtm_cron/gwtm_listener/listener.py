@@ -49,34 +49,38 @@ class Listener():
         # KAFKA_OFFSET_RESET controls where to start reading from:
         # - 'latest' (default): Only new messages arriving after consumer starts
         # - 'earliest': Read from the oldest available message in the buffer (past few days)
-        kafka_config = None
+
+        # Always create kafka_config to avoid GSSAPI/libsasl2 issues in Docker
+        # By explicitly setting security.protocol, we prevent librdkafka from trying GSSAPI
+        kafka_config = {
+            'security.protocol': 'SASL_SSL',
+            'sasl.mechanism': 'OAUTHBEARER',
+            # Set SSL CA location for Debian-based Docker images (python:3.11-slim)
+            'ssl.ca.location': '/etc/ssl/certs/ca-certificates.crt',
+        }
+
         offset_reset = os.environ.get('KAFKA_OFFSET_RESET', '').lower()
         kafka_group_id = os.environ.get('KAFKA_GROUP_ID', '')
 
-        # Only create config dict if we have custom settings
-        # Note: Passing config may override gcn-kafka defaults, so only do it when necessary
-        if offset_reset == 'earliest' or kafka_group_id:
-            kafka_config = {}
-            # Only set offset reset if explicitly set to 'earliest' (gcn-kafka defaults to 'latest')
-            if offset_reset == 'earliest':
-                kafka_config['auto.offset.reset'] = 'earliest'
-                if self.use_json_logging:
-                    self.logger.info(f"Kafka offset reset policy: earliest")
-                else:
-                    print(f"Kafka offset reset policy: earliest")
-
-            if kafka_group_id:
-                kafka_config['group.id'] = kafka_group_id
-                if self.use_json_logging:
-                    self.logger.info(f"Kafka group ID: {kafka_group_id}")
-                else:
-                    print(f"Kafka group ID: {kafka_group_id}")
-        else:
-            # No custom config - let gcn-kafka use defaults
+        # Add custom settings if specified
+        if offset_reset == 'earliest':
+            kafka_config['auto.offset.reset'] = 'earliest'
             if self.use_json_logging:
-                self.logger.info("Using default Kafka consumer configuration")
+                self.logger.info(f"Kafka offset reset policy: earliest")
             else:
-                print("Using default Kafka consumer configuration")
+                print(f"Kafka offset reset policy: earliest")
+
+        if kafka_group_id:
+            kafka_config['group.id'] = kafka_group_id
+            if self.use_json_logging:
+                self.logger.info(f"Kafka group ID: {kafka_group_id}")
+            else:
+                print(f"Kafka group ID: {kafka_group_id}")
+
+        if self.use_json_logging:
+            self.logger.info("Kafka consumer configured with explicit SASL settings")
+        else:
+            print("Kafka consumer configured with explicit SASL settings")
 
         self.consumer = Consumer(
             config=kafka_config,

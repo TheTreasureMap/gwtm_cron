@@ -18,7 +18,7 @@ def listen(config : config.Config, alert, write_to_storage=True, verbose=False, 
     print(record)
 
     icecube_notice = {
-        "ref_ID" : record["reference"]["gcn.notices.LVK.alert"] if "reference" in rkeys else "error",
+        "ref_id" : record["reference"]["gcn.notices.LVK.alert"] if "reference" in rkeys else "error",
         "alert_datetime" : record["alert_datetime"] if "alert_datetime" in rkeys else '1991-12-23T19:15:00',
         "observation_start" : record["observation_start"] if "observation_start" in rkeys else '1991-12-23T19:15:00',
         "observation_stop" : record["observation_stop"] if "observation_stop" in rkeys else '1991-12-23T19:15:00',
@@ -26,7 +26,7 @@ def listen(config : config.Config, alert, write_to_storage=True, verbose=False, 
         "pval_bayesian" : record["pval_bayesian"] if "pval_bayesian" in rkeys else '0.0',
     }
 
-    # ref_id = icecube_notice["ref_ID"]
+    # ref_id = icecube_notice["ref_id"]
     # if len(ref_id.split("-")):
     #     graceid = ref_id.split("-")[0]
     #     icecube_notice["graceid"] = graceid

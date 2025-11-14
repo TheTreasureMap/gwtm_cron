@@ -29,14 +29,13 @@ def query_gwtm_alerts(graceid, alert_type, config: config.Config):
     base = config.API_BASE
     target = "query_alerts"
     headers = {
-        "Content-Type": "application/json",
         "api_token": config.API_TOKEN
     }
     params = {
         "graceid" : graceid,
         "alert_type" : alert_type
     }
-    r = requests.get(f"{base}{target}", headers=headers, json=params)
+    r = requests.get(f"{base}{target}", headers=headers, params=params)
     if r.status_code == 200:
         return json.loads(r.text)
     else:
@@ -80,7 +79,6 @@ def delete_galaxy_list(galaxies,config: config.Config):
     base = config.API_BASE
     target = "event_galaxies"
     headers = {
-        "Content-Type": "application/json",
         "api_token": config.API_TOKEN
     }
 
@@ -88,7 +86,7 @@ def delete_galaxy_list(galaxies,config: config.Config):
         'groupname' : galaxies['groupname'],
         'graceid' : galaxies['graceid'],
     }
-    r_get = requests.get(f"{base}{target}", headers=headers, json=params)
+    r_get = requests.get(f"{base}{target}", headers=headers, params=params)
 
     if r_get.status_code == 200:
         gal_list = json.loads(r_get.text)
@@ -120,9 +118,14 @@ def post_icecube_notice(notice, events, config: config.Config):
         "api_token": config.API_TOKEN
     }
     params = {
-        "icecube_notice"              : notice,
-        "icecube_notice_coinc_events" : events
+        "notice_data": notice,
+        "events_data": events
     }
+
+    print(f"DEBUG: Posting to {base}{target}")
+    print(f"DEBUG: notice_data keys: {list(notice.keys())}")
+    print(f"DEBUG: events_data length: {len(events)}")
+    print(f"DEBUG: Full params: {json.dumps(params, indent=2)}")
 
     r = requests.post(f"{base}{target}", headers=headers, json=params)
     if r.status_code == 200:
