@@ -3,15 +3,19 @@
 Selective Alert Ingestion Tool
 
 This script helps you catch up on alerts selectively by:
-1. First listing all available alerts in the Kafka stream (without ingesting)
-2. Allowing you to ingest only alerts matching a specific filter string
+1. Listing all available alerts in the Kafka stream (without ingesting)
+2. Ingesting only alerts matching a specific filter string from Kafka
+3. Downloading and ingesting specific alerts directly from GraceDB URLs
 
 Usage:
     # List mode: Show all available alerts without ingestion
     python selective_ingest.py --list --max-alerts 50
 
-    # Ingest mode: Process only alerts matching a filter string
+    # Ingest mode: Process only alerts matching a filter string from Kafka
     python selective_ingest.py --ingest --filter "S230" --write --no-dry-run
+
+    # GraceDB mode: Download specific alerts directly from GraceDB
+    python selective_ingest.py --gracedb --ids S251010al S251011x --write --no-dry-run
 
     # Test mode: Show what would be ingested (dry run)
     python selective_ingest.py --ingest --filter "S230"
@@ -21,6 +25,7 @@ import sys
 import os
 import json
 import argparse
+import requests
 from datetime import datetime
 
 # Add src to path
@@ -260,6 +265,171 @@ def ingest_filtered(config_path, listener_type, filter_string, write_to_s3=False
     print("="*80)
 
 
+def discover_alert_files(superevent_id):
+    """
+    Discover all available alert JSON files for a superevent from GraceDB.
+
+    Args:
+        superevent_id: The superevent ID (e.g., 'S251010al')
+
+    Returns:
+        List of alert filenames (e.g., ['S251017at-preliminary.json', 'S251017at-update.json'])
+    """
+    files_url = f"https://gracedb.ligo.org/api/superevents/{superevent_id}/files/"
+
+    try:
+        response = requests.get(files_url)
+        if response.status_code != 200:
+            print(f"⚠️  Could not list files for {superevent_id} (HTTP {response.status_code})")
+            return []
+
+        # Parse the JSON response - GraceDB returns a dict where keys are filenames
+        files_data = response.json()
+
+        # Filter for alert JSON files (common alert type names)
+        alert_types = ['earlywarning', 'preliminary', 'initial', 'update', 'retraction']
+        alert_files = []
+
+        for filename in files_data.keys():
+            # Check if it's a JSON file
+            if not filename.endswith('.json'):
+                continue
+
+            # Extract the alert type from filename (format: S251017at-preliminary.json)
+            # Remove superevent ID prefix and .json suffix
+            basename = filename.lower()
+            for alert_type in alert_types:
+                if f"-{alert_type}.json" in basename:
+                    alert_files.append(filename)
+                    break
+
+        return sorted(alert_files)
+
+    except requests.RequestException as e:
+        print(f"⚠️  Network error listing files for {superevent_id}: {e}")
+        return []
+    except (json.JSONDecodeError, KeyError, TypeError) as e:
+        print(f"⚠️  Could not parse file list for {superevent_id}: {e}")
+        return []
+
+
+def ingest_from_gracedb(config_path, superevent_ids, alert_types=None,
+                        write_to_s3=False, dry_run=True, listener_type="LIGO_ALERT"):
+    """
+    Download and ingest alerts directly from GraceDB URLs.
+
+    Args:
+        config_path: Path to listener config JSON
+        superevent_ids: List of superevent IDs (e.g., ['S251010al', 'S251011x'])
+        alert_types: List of alert types to download (e.g., ['preliminary', 'update'])
+                     If None, automatically discovers all available alert files
+        write_to_s3: Whether to write to S3 storage
+        dry_run: If True, don't post to API
+        listener_type: Type of listener (LIGO_ALERT or ICECUBE_NOTICE)
+    """
+    print("="*80)
+    print(f"GRACEDB DOWNLOAD MODE - {listener_type}")
+    print("="*80)
+    print(f"Superevent IDs: {', '.join(superevent_ids)}")
+    if alert_types:
+        print(f"Alert types (specified): {', '.join(alert_types)}")
+    else:
+        print(f"Alert types: Auto-discover all available")
+    print(f"Write to S3: {write_to_s3}")
+    print(f"Dry run: {dry_run} (API posting {'DISABLED' if dry_run else 'ENABLED'})")
+    print()
+
+    # Create listener
+    l = listener.Listener(listener_type=listener_type, config_path=config_path)
+
+    alerts_processed = 0
+    alerts_failed = 0
+    alerts_skipped = 0
+
+    for superevent_id in superevent_ids:
+        print(f"\n{'='*60}")
+        print(f"Processing superevent: {superevent_id}")
+        print(f"{'='*60}")
+
+        # If alert_types not specified, discover what's available
+        if alert_types is None:
+            print("Discovering available alert files...")
+            alert_files = discover_alert_files(superevent_id)
+            if not alert_files:
+                print(f"⚠️  No alert files found for {superevent_id}")
+                continue
+            print(f"Found {len(alert_files)} alert file(s): {', '.join(alert_files)}")
+        else:
+            # Use specified alert types - construct full filenames
+            alert_files = [f"{superevent_id}-{atype}.json" for atype in alert_types]
+
+        # Download and process each alert file
+        for filename in alert_files:
+            url = f"https://gracedb.ligo.org/api/superevents/{superevent_id}/files/{filename}"
+
+            print(f"\n  → Downloading: {filename}")
+            print(f"    URL: {url}")
+
+            try:
+                # Download the alert JSON
+                response = requests.get(url)
+
+                if response.status_code == 404:
+                    print(f"    ⚠️  Not found - skipping")
+                    alerts_skipped += 1
+                    continue
+                elif response.status_code != 200:
+                    print(f"    ❌ HTTP {response.status_code} - skipping")
+                    alerts_failed += 1
+                    continue
+
+                # Parse to verify it's valid JSON
+                alert_json = response.text
+                alert_data = json.loads(alert_json)
+
+                print(f"    ✓ Downloaded {len(alert_json)} bytes")
+                print(f"      Alert type: {alert_data.get('alert_type', 'UNKNOWN')}")
+                print(f"      Time created: {alert_data.get('time_created', 'UNKNOWN')}")
+
+                # Process the alert through the listener
+                alert, ext_alert = l._listen(
+                    alert=alert_json,
+                    write_to_s3=write_to_s3,
+                    verbose=True,
+                    dry_run=dry_run
+                )
+
+                print(f"\n    Result:")
+                print(f"    {alert}")
+                if ext_alert:
+                    print(f"\n    External Alert:")
+                    print(f"    {ext_alert}")
+
+                alerts_processed += 1
+                print(f"\n    ✓ Processed successfully")
+
+            except requests.RequestException as e:
+                print(f"    ❌ Network error: {e}")
+                alerts_failed += 1
+            except json.JSONDecodeError as e:
+                print(f"    ❌ Invalid JSON: {e}")
+                alerts_failed += 1
+            except Exception as e:
+                print(f"    ❌ Processing error: {e}")
+                import traceback
+                traceback.print_exc()
+                alerts_failed += 1
+
+    print("\n" + "="*80)
+    print(f"SUMMARY")
+    print("="*80)
+    print(f"Alerts processed: {alerts_processed}")
+    print(f"Alerts skipped: {alerts_skipped}")
+    print(f"Alerts failed: {alerts_failed}")
+    print(f"Mode: {'DRY RUN (no API calls)' if dry_run else 'LIVE (API calls made)'}")
+    print("="*80)
+
+
 def main():
     parser = argparse.ArgumentParser(
         description='Selective alert ingestion tool for GWTM',
@@ -283,6 +453,15 @@ Examples:
 
   # Ingest all S25* alerts except test alerts (MS*)
   %(prog)s --ingest --filter "S25" --exclude-test --write --no-dry-run
+
+  # Download specific alerts from GraceDB (dry run)
+  %(prog)s --gracedb --ids S251010al S251011x
+
+  # Download and ingest from GraceDB with specific alert types
+  %(prog)s --gracedb --ids S251010al --alert-types preliminary update --no-dry-run --write
+
+  # Download all alert types for multiple events
+  %(prog)s --gracedb --ids S251010al S251011x --alert-types preliminary initial update retraction --write --no-dry-run
         """
     )
 
@@ -292,6 +471,8 @@ Examples:
                            help='List mode: show available alerts without ingesting')
     mode_group.add_argument('--ingest', action='store_true',
                            help='Ingest mode: process alerts matching filter')
+    mode_group.add_argument('--gracedb', action='store_true',
+                           help='GraceDB mode: download alerts directly from GraceDB URLs')
 
     # Common options
     parser.add_argument('--config', type=str, default='./listener_config.json',
@@ -312,9 +493,15 @@ Examples:
     parser.add_argument('--filter', type=str,
                        help='[INGEST] Only process alerts containing this string')
     parser.add_argument('--write', action='store_true',
-                       help='[INGEST] Write to S3 storage')
+                       help='[INGEST/GRACEDB] Write to S3 storage')
     parser.add_argument('--no-dry-run', action='store_true',
-                       help='[INGEST] Actually post to API (default is dry run)')
+                       help='[INGEST/GRACEDB] Actually post to API (default is dry run)')
+
+    # GraceDB mode options
+    parser.add_argument('--ids', type=str, nargs='+',
+                       help='[GRACEDB] Superevent IDs to download (e.g., S251010al S251011x)')
+    parser.add_argument('--alert-types', type=str, nargs='+',
+                       help='[GRACEDB] Alert types to download (e.g., preliminary update). Default: preliminary initial update')
 
     args = parser.parse_args()
 
@@ -335,7 +522,7 @@ Examples:
                 timeout_seconds=args.timeout,
                 debug=args.debug
             )
-        else:
+        elif args.ingest:
             # Ingest mode
             if not args.filter:
                 print("❌ ERROR: --filter is required for ingest mode")
@@ -350,6 +537,21 @@ Examples:
                 max_alerts=args.max,
                 timeout_seconds=args.timeout,
                 exclude_test=args.exclude_test
+            )
+        elif args.gracedb:
+            # GraceDB mode
+            if not args.ids:
+                print("❌ ERROR: --ids is required for gracedb mode")
+                print("Example: --gracedb --ids S251010al S251011x")
+                return 1
+
+            ingest_from_gracedb(
+                config_path=args.config,
+                superevent_ids=args.ids,
+                alert_types=args.alert_types,
+                write_to_s3=args.write,
+                dry_run=not args.no_dry_run,
+                listener_type=args.type
             )
 
         return 0
