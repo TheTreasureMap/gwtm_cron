@@ -163,25 +163,25 @@ def generate_galaxy_list(eventlocalization: EventLocalization, galaxy_config_pat
     distanceFactor[absolute_sensitivity>maxL] = mindistFactor
 
     # Sorting glaxies by probability
-    ii = np.argsort(p*massNorm*distanceFactor,kind="mergesort")[::-1]
+    sorted_gal_ind = np.argsort(p*massNorm*distanceFactor,kind="mergesort")[::-1]
 
     ####counting galaxies that constitute 50% of the probability(~0.5*0.98)
     summ = 0
     galaxies50per = 0
     sum_seen = 0
     while summ<0.5:
-        if galaxies50per>= len(ii):
+        if galaxies50per>= len(sorted_gal_ind):
             break
-        summ = summ + (p[ii[galaxies50per]]*massNorm[ii[galaxies50per]])/float(normalization)
-        sum_seen = sum_seen + (p[ii[galaxies50per]]*massNorm[ii[galaxies50per]]*distanceFactor[ii[galaxies50per]])/float(normalization)
+        summ = summ + (p[sorted_gal_ind[galaxies50per]]*massNorm[sorted_gal_ind[galaxies50per]])/float(normalization)
+        sum_seen = sum_seen + (p[sorted_gal_ind[galaxies50per]]*massNorm[sorted_gal_ind[galaxies50per]]*distanceFactor[sorted_gal_ind[galaxies50per]])/float(normalization)
         galaxies50per = galaxies50per+1
 
     #if want to limit by number of galaxies in .ini file
 
-    if len(ii) > ngalaxtoshow:
-        n = ngalaxtoshow
+    if len(sorted_gal_ind) > ngalaxtoshow:
+        list_length = ngalaxtoshow
     else:
-        n = len(ii)
+        list_length = len(sorted_gal_ind)
 
     score=(p * massNorm / normalization)
     ra=galaxies['ra']
@@ -192,9 +192,9 @@ def generate_galaxy_list(eventlocalization: EventLocalization, galaxy_config_pat
     
     print('INFO: Finished creating ranked galaxy list for EventLocalization {}'.format(eventlocalization))
 
-    iter = ii.tolist()
+    iter = sorted_gal_ind.tolist()
     galaxy_list = []
-    for i in range(n):
+    for i in range(list_length):
         ind = iter[i]
         galaxy_list.append({
             "ra":ra[ind],
