@@ -44,7 +44,6 @@ class Listener():
             self.logger = log_module.get_logger(__name__)
 
         # Backwards compatibility: try production path first, then local
-        import os
         if config_path is None:
             production_path = "/home/azureuser/cron/listener_config.json"
             local_path = "./listener_config.json"
