@@ -57,6 +57,8 @@ class Listener():
             'sasl.mechanism': 'OAUTHBEARER',
             # Set SSL CA location for Debian-based Docker images (python:3.11-slim)
             'ssl.ca.location': '/etc/ssl/certs/ca-certificates.crt',
+            # Force IPv4 to avoid "Network is unreachable" errors with IPv6
+            'broker.address.family': 'v4',
         }
 
         offset_reset = os.environ.get('KAFKA_OFFSET_RESET', '').lower()
@@ -120,6 +122,9 @@ class Listener():
             self._log(f'Listening for alerts from {LISTENER_TYPES[self.listener_type]["domain"]}',
                      domain=LISTENER_TYPES[self.listener_type]["domain"])
 
+        consume_count = 0
+        heartbeat_interval = 300  # Log heartbeat every 5 minutes
+
         while self.running:
             for message in self.consumer.consume(timeout=1):
                 if not self.running:
@@ -141,6 +146,12 @@ class Listener():
                         if ext_alert:
                             print()
                             print(ext_alert)
+
+            # Heartbeat logging to show the listener is active
+            consume_count += 1
+            if verbose and consume_count % heartbeat_interval == 0:
+                self._log(f"Listener active, no messages received in last {heartbeat_interval} seconds",
+                         consume_cycles=consume_count)
 
         # Cleanup on shutdown
         if verbose:
