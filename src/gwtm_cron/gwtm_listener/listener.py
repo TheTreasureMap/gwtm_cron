@@ -30,7 +30,7 @@ LISTENER_TYPES = {
 
 class Listener():
 
-    def __init__(self, listener_type, config_path: str = "home/azureuser/cron/listener_config.json"):
+    def __init__(self, listener_type, config_path: str = None):
 
         assert listener_type in LISTENER_TYPES.keys(), "Invalid Listener Type"
 
@@ -43,49 +43,45 @@ class Listener():
         if self.use_json_logging:
             self.logger = log_module.get_logger(__name__)
 
+        # Backwards compatibility: try production path first, then local
+        import os
+        if config_path is None:
+            production_path = "/home/azureuser/cron/listener_config.json"
+            local_path = "./listener_config.json"
+
+            if os.path.exists(production_path):
+                config_path = production_path
+            elif os.path.exists(local_path):
+                config_path = local_path
+            # else: config_path stays None, will use environment variables
+
         self.config = config.Config(path_to_config=config_path)
 
-        # Kafka consumer configuration
+        # Build consumer config - let gcn_kafka handle security, just specify IPv4 and offset
+        consumer_config = {'broker.address.family': 'v4'}
+
         # KAFKA_OFFSET_RESET controls where to start reading from:
         # - 'latest' (default): Only new messages arriving after consumer starts
         # - 'earliest': Read from the oldest available message in the buffer (past few days)
+        offset_reset = os.environ.get('KAFKA_OFFSET_RESET', 'latest')
+        consumer_config['auto.offset.reset'] = offset_reset
 
-        # Always create kafka_config to avoid GSSAPI/libsasl2 issues in Docker
-        # By explicitly setting security.protocol, we prevent librdkafka from trying GSSAPI
-        kafka_config = {
-            'security.protocol': 'SASL_SSL',
-            'sasl.mechanism': 'OAUTHBEARER',
-            # Set SSL CA location for Debian-based Docker images (python:3.11-slim)
-            'ssl.ca.location': '/etc/ssl/certs/ca-certificates.crt',
-            # Force IPv4 to avoid "Network is unreachable" errors with IPv6
-            'broker.address.family': 'v4',
-        }
-
-        offset_reset = os.environ.get('KAFKA_OFFSET_RESET', '').lower()
+        # Optional: Consumer group ID for persistent offset tracking
         kafka_group_id = os.environ.get('KAFKA_GROUP_ID', '')
-
-        # Add custom settings if specified
-        if offset_reset == 'earliest':
-            kafka_config['auto.offset.reset'] = 'earliest'
-            if self.use_json_logging:
-                self.logger.info(f"Kafka offset reset policy: earliest")
-            else:
-                print(f"Kafka offset reset policy: earliest")
-
         if kafka_group_id:
-            kafka_config['group.id'] = kafka_group_id
+            consumer_config['group.id'] = kafka_group_id
             if self.use_json_logging:
                 self.logger.info(f"Kafka group ID: {kafka_group_id}")
             else:
                 print(f"Kafka group ID: {kafka_group_id}")
 
         if self.use_json_logging:
-            self.logger.info("Kafka consumer configured with explicit SASL settings")
+            self.logger.info(f"Kafka consumer configured (IPv4-only, offset: {offset_reset})")
         else:
-            print("Kafka consumer configured with explicit SASL settings")
+            print(f"Kafka consumer configured (IPv4-only, offset: {offset_reset})")
 
         self.consumer = Consumer(
-            config=kafka_config,
+            config=consumer_config,
             client_id=self.config.KAFKA_CLIENT_ID,
             client_secret=self.config.KAFKA_CLIENT_SECRET
         )
