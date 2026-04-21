@@ -48,7 +48,7 @@ def listen(config : config.Config, alert, write_to_storage=True, verbose=False, 
 
     alert_keys = record.keys()
     gwa.update({
-            "datecreated"       : datetime.datetime.now().strftime('"%Y-%m-%dT%H:%M:%S.%f"'),
+            "datecreated"       : datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S.%f'),
             "observing_run"     : config.OBSERVING_RUN,
             "description"       : "O4 Alert",
             "role"              : alert_role,
