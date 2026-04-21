@@ -22,7 +22,8 @@ ligo.skymap>=1.0.0
 boto3>=1.26.0  # AWS S3
 s3fs>=2023.1.0  # S3 backend for fsspec
 adlfs>=2023.1.0  # Azure Blob Storage
-python-swiftclient>=4.0.0  # OpenStack Swift
+python-swiftclient>=4.3.0  # OpenStack Swift (4.3.0+ fixes urllib3 v2 compatibility)
+urllib3<2.0  # swiftclient uses resp.raw.getheader removed in urllib3 2.0
 python-keystoneclient>=5.0.0  # Required for Swift Keystone v3 auth
 aiohttp>=3.8.0  # Required by s3fs and other async operations
 
