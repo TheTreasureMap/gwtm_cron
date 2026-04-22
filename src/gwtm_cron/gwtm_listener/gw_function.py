@@ -98,7 +98,7 @@ def delete_galaxy_list(galaxies,config: config.Config):
                 'listid':gal_list[0]['listid']
             }
 
-            r_post = requests.post(f"{base}{target_remove}", headers=headers, json=del_params)
+            r_post = requests.delete(f"{base}{target_remove}", headers=headers, params=del_params)
             print("INFO: Successfully deleted galaxy list")
 
             if r_post.status_code == 200:
