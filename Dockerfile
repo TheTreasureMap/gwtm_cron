@@ -24,4 +24,6 @@ COPY . /app
 # Install the gwtm_cron package
 RUN pip install -e .
 
-CMD ["python", "src/gwtm_cron/gwtm_listener/listener.py"]
+RUN chmod +x docker/start_ligo_listener.sh
+
+CMD ["bash", "docker/start_ligo_listener.sh"]
