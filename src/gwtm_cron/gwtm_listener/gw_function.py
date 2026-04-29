@@ -39,7 +39,7 @@ def query_gwtm_alerts(graceid, alert_type, config: config.Config):
     if r.status_code == 200:
         return json.loads(r.text)
     else:
-        raise Exception(f"Bad api request: f{r.text}")
+        raise Exception(f"Bad api request: {r.text}")
 
 
 def post_gwtm_alert(gwa, config: config.Config):
@@ -55,7 +55,7 @@ def post_gwtm_alert(gwa, config: config.Config):
     if r.status_code == 200:
         return json.loads(r.text)
     else:
-        raise Exception(f"Bad api request: f{r.text}")
+        raise Exception(f"Bad api request: {r.text}")
 
 #post the galaxy list
 def post_galaxy_list(galaxies,config: config.Config):
@@ -72,7 +72,7 @@ def post_galaxy_list(galaxies,config: config.Config):
     if r.status_code == 200:
         return
     else:
-        raise Exception(f"Bad api request: f{r.text}")
+        raise Exception(f"Bad api request: {r.text}")
 
 
 def delete_galaxy_list(galaxies,config: config.Config):
@@ -131,7 +131,7 @@ def post_icecube_notice(notice, events, config: config.Config):
     if r.status_code == 200:
         return json.loads(r.text)
     else:
-        raise Exception(f"Bad api request: f{r.text}")
+        raise Exception(f"Bad api request: {r.text}")
 
  
 def del_test_alerts(config: config.Config):
@@ -146,7 +146,7 @@ def del_test_alerts(config: config.Config):
     if r.status_code == 200:
         return r
     else:
-        raise Exception(f"Bad api request: f{r.text}")
+        raise Exception(f"Bad api request: {r.text}")
 
 
 def get_packet_type(alert_type):
