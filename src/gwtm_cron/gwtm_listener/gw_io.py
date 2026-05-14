@@ -13,6 +13,7 @@ from mocpy import MOC  # type: ignore
 
 import numpy as np
 
+
 try:
     from . import gw_function as function
     from . import gw_config as config
@@ -173,7 +174,7 @@ class Writer():
             print('Calculating Fermi contour map')
 
         try:
-            tos = datetime.datetime.strptime(self.gwalert_dict["time_of_signal"], "%Y-%m-%dT%H:%M:%S.%f")
+            tos = datetime.datetime.fromisoformat(self.gwalert_dict["time_of_signal"])
             earth_ra,earth_dec,earth_rad=function.getearthsatpos(tos)
             contour = function.makeEarthContour(earth_ra,earth_dec,earth_rad)
             skycoord = SkyCoord(contour, unit="deg", frame="icrs")
@@ -213,7 +214,7 @@ class Writer():
         if verbose:
             print('Calculating LAT contours')
 
-        tos = datetime.datetime.strptime(self.gwalert_dict["time_of_signal"], "%Y-%m-%dT%H:%M:%S.%f")
+        tos = datetime.datetime.fromisoformat(self.gwalert_dict["time_of_signal"])
         try:
             ra, dec = function.getFermiPointing(tos)
             pointing_footprint= function.makeLATFoV(ra,dec)
