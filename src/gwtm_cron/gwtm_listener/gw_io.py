@@ -14,25 +14,6 @@ from mocpy import MOC  # type: ignore
 import numpy as np
 
 
-def parse_datetime_flexible(datetime_str):
-    """
-    Parse datetime string with or without fractional seconds.
-    Handles both formats: '2023-01-01T12:34:56.123456' and '2023-01-01T12:34:56'
-    """
-    formats = [
-        "%Y-%m-%dT%H:%M:%S.%f",  # With fractional seconds
-        "%Y-%m-%dT%H:%M:%S",     # Without fractional seconds
-    ]
-
-    for fmt in formats:
-        try:
-            return datetime.datetime.strptime(datetime_str, fmt)
-        except ValueError:
-            continue
-
-    # If none work, raise the error
-    raise ValueError(f"Unable to parse datetime string: {datetime_str}")
-
 try:
     from . import gw_function as function
     from . import gw_config as config
@@ -196,7 +177,7 @@ class Writer():
             print('Calculating Fermi contour map')
 
         try:
-            tos = parse_datetime_flexible(self.gwalert_dict["time_of_signal"])
+            tos = datetime.datetime.fromisoformat(self.gwalert_dict["time_of_signal"])
             earth_ra,earth_dec,earth_rad=function.getearthsatpos(tos)
             contour = function.makeEarthContour(earth_ra,earth_dec,earth_rad)
             skycoord = SkyCoord(contour, unit="deg", frame="icrs")
@@ -237,7 +218,7 @@ class Writer():
         if verbose:
             print('Calculating LAT contours')
 
-        tos = parse_datetime_flexible(self.gwalert_dict["time_of_signal"])
+        tos = datetime.datetime.fromisoformat(self.gwalert_dict["time_of_signal"])
         try:
             ra, dec = function.getFermiPointing(tos)
             pointing_footprint= function.makeLATFoV(ra,dec)
