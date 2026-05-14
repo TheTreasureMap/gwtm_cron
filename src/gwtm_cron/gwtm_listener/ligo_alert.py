@@ -44,6 +44,7 @@ def listen(config : config.Config, alert, write_to_s3=True, verbose=False, dry_r
 
     gwa = {}
     ext_gwa = None
+    post_galaxies_json = None
 
     alert_keys = record.keys()
     gwa.update({
@@ -150,7 +151,6 @@ def listen(config : config.Config, alert, write_to_s3=True, verbose=False, dry_r
             writer.set_skymap(skymap_bytes)
             writer.process(config=config, verbose=verbose)
 
-            post_galaxies_json = None
             try:
                 # create EventLocatlization object to be passed into the galaxies list
                 gwa_obj = fg.EventLocalization(gwa)

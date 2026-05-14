@@ -26,15 +26,35 @@ LISTENER_TYPES = {
 
 class Listener():
 
-    def __init__(self, listener_type, config_path: str = "home/azureuser/cron/listener_config.json"):
+    def __init__(self, listener_type, config_path: str = None):
 
         assert listener_type in LISTENER_TYPES.keys(), "Invalid Listener Type"
 
         self.listener_type = listener_type
 
+        # Backwards compatibility: try production path first, then local
+        import os
+        if config_path is None:
+            production_path = "/home/azureuser/cron/listener_config.json"
+            local_path = "./listener_config.json"
+
+            if os.path.exists(production_path):
+                config_path = production_path
+            elif os.path.exists(local_path):
+                config_path = local_path
+            # else: config_path stays None, will use environment variables
+
         self.config = config.Config(path_to_config=config_path)
 
+        # Build consumer config
+        consumer_config = {'broker.address.family': 'v4'}
+
+        # Check for KAFKA_OFFSET_RESET environment variable
+        offset_reset = os.environ.get('KAFKA_OFFSET_RESET', 'latest')
+        consumer_config['auto.offset.reset'] = offset_reset
+
         self.consumer = Consumer(
+            config=consumer_config,
             client_id=self.config.KAFKA_CLIENT_ID,
             client_secret=self.config.KAFKA_CLIENT_SECRET
         )
