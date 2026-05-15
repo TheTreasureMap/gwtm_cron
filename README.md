@@ -51,12 +51,34 @@ docker compose up icecube-listener
 
 ```bash
 docker build -t gwtm_cron .
-docker tag gwtm_cron:latest 929887798640.dkr.ecr.us-east-2.amazonaws.com/gwtm_cron_listener:latest
-./ecrlogin.sh
-docker push 929887798640.dkr.ecr.us-east-2.amazonaws.com/gwtm_cron_listener:latest
+docker tag gwtm_cron:latest ghcr.io/thetreasuremap/gwtm_cron:latest
+docker push ghcr.io/thetreasuremap/gwtm_cron:latest
 ```
 
-**Note**: GitHub Actions automatically builds and pushes to ECR on commits to master.
+Images are published to `ghcr.io/thetreasuremap/gwtm_cron` via GitHub Actions.
+
+## Production Deployment
+
+Listeners are deployed to Kubernetes via ArgoCD, managed from the
+[gwtm-deploy](https://github.com/TheTreasureMap/gwtm-deploy) repo and using the
+Helm chart in the [gwtm](https://github.com/TheTreasureMap/gwtm) repo
+(`gwtm-helm/values-listeners-prod.yaml`).
+
+### Releasing a new version
+
+1. Merge changes to `master`
+2. Tag the release:
+   ```bash
+   git tag v1.2.3
+   git push origin v1.2.3
+   ```
+3. GitHub Actions builds and pushes `ghcr.io/thetreasuremap/gwtm_cron:1.2.3`
+4. ArgoCD Image Updater detects the new semver tag and automatically updates the
+   Helm parameter `listeners.image.tag` in the `gwtm` repo, writing back to
+   `gwtm-helm/.argocd-source-gwtm-listeners.yaml`
+5. ArgoCD syncs the `gwtm-listeners` application and rolls out the new pods
+
+No manual Helm or kubectl commands are needed for routine releases.
 
 ## Environment Variables
 
