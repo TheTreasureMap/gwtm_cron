@@ -4,7 +4,6 @@ import json
 class Config(object):
 
     def __init__(self, path_to_config=None):
-        print(path_to_config)
         if path_to_config and os.path.exists(path_to_config):
 
             fi = open(path_to_config)
@@ -15,10 +14,20 @@ class Config(object):
             self.AWS_DEFAULT_REGION = data["AWS_DEFAULT_REGION"] if "AWS_DEFAULT_REGION" in data.keys() else "us-east-2"
             self.AWS_BUCKET = data["AWS_BUCKET"] if "AWS_BUCKET" in data.keys() else "gwtreasuremap"
             self.AZURE_ACCOUNT_NAME = data["AZURE_ACCOUNT_NAME"] if "AZURE_ACCOUNT_NAME" in data.keys() else ""
-            self.AZURE_ACCOUNT_KEY = data["AZURE_ACCOUNT_KEY"] if "AZURE_ACCOUNT_KEY" in data.keys() else "" 
+            self.AZURE_ACCOUNT_KEY = data["AZURE_ACCOUNT_KEY"] if "AZURE_ACCOUNT_KEY" in data.keys() else ""
+            self.OS_AUTH_URL = data["OS_AUTH_URL"] if "OS_AUTH_URL" in data.keys() else ""
+            self.OS_USERNAME = data["OS_USERNAME"] if "OS_USERNAME" in data.keys() else ""
+            self.OS_PASSWORD = data["OS_PASSWORD"] if "OS_PASSWORD" in data.keys() else ""
+            self.OS_PROJECT_NAME = data["OS_PROJECT_NAME"] if "OS_PROJECT_NAME" in data.keys() else ""
+            self.OS_USER_DOMAIN_NAME = data["OS_USER_DOMAIN_NAME"] if "OS_USER_DOMAIN_NAME" in data.keys() else "Default"
+            self.OS_PROJECT_DOMAIN_NAME = data["OS_PROJECT_DOMAIN_NAME"] if "OS_PROJECT_DOMAIN_NAME" in data.keys() else "Default"
+            self.OS_CONTAINER_NAME = data["OS_CONTAINER_NAME"] if "OS_CONTAINER_NAME" in data.keys() else "gwtreasuremap"
+            self.OS_STORAGE_URL = data["OS_STORAGE_URL"] if "OS_STORAGE_URL" in data.keys() else ""
             self.STORAGE_BUCKET_SOURCE = data["STORAGE_BUCKET_SOURCE"] if "STORAGE_BUCKET_SOURCE" in data.keys() else "abfs"
             self.API_TOKEN = data["API_TOKEN"] if "API_TOKEN" in data.keys() else ""
-            self.API_BASE = data["API_BASE"] if "API_BASE" in data.keys() else "http://127.0.0.1:5000/api/v0/"
+            # Default to Kubernetes service if KUBERNETES_SERVICE_HOST is set, otherwise localhost
+            default_api_base = "http://gwtm-api:5000/api/v0/" if os.environ.get('KUBERNETES_SERVICE_HOST') else "http://127.0.0.1:5000/api/v0/"
+            self.API_BASE = data["API_BASE"] if "API_BASE" in data.keys() else default_api_base
             self.ALERT_DOMAIN = data["ALERT_DOMAIN"] if "ALERT_DOMAIN" in data.keys() else "igwn.gwalert"
             self.OBSERVING_RUN = data["OBSERVING_RUN"] if "OBSERVING_RUN" in data.keys() else "O4"
             self.KAFKA_CLIENT_ID = data["KAFKA_CLIENT_ID"] if "KAFKA_CLIENT_ID" in data.keys() else ""
@@ -31,9 +40,19 @@ class Config(object):
             self.AWS_BUCKET = os.environ.get('AWS_BUCKET', 'gwtreasuremap')
             self.AZURE_ACCOUNT_NAME = os.environ.get('AZURE_ACCOUNT_NAME', '')
             self.AZURE_ACCOUNT_KEY = os.environ.get('AZURE_ACCOUNT_KEY', '')
+            self.OS_AUTH_URL = os.environ.get('OS_AUTH_URL', '')
+            self.OS_USERNAME = os.environ.get('OS_USERNAME', '')
+            self.OS_PASSWORD = os.environ.get('OS_PASSWORD', '')
+            self.OS_PROJECT_NAME = os.environ.get('OS_PROJECT_NAME', '')
+            self.OS_USER_DOMAIN_NAME = os.environ.get('OS_USER_DOMAIN_NAME', 'Default')
+            self.OS_PROJECT_DOMAIN_NAME = os.environ.get('OS_PROJECT_DOMAIN_NAME', 'Default')
+            self.OS_CONTAINER_NAME = os.environ.get('OS_CONTAINER_NAME', 'gwtreasuremap')
+            self.OS_STORAGE_URL = os.environ.get('OS_STORAGE_URL', '')
             self.STORAGE_BUCKET_SOURCE = os.environ.get('STORAGE_BUCKET_SOURCE', 'abfs')
             self.API_TOKEN = os.environ.get('API_TOKEN', '')
-            self.API_BASE = os.environ.get('API_BASE', 'http://127.0.0.1:5000/api/v0/')
+            # Default to Kubernetes service if KUBERNETES_SERVICE_HOST is set, otherwise localhost
+            default_api_base = "http://gwtm-api:5000/api/v0/" if os.environ.get('KUBERNETES_SERVICE_HOST') else "http://127.0.0.1:5000/api/v0/"
+            self.API_BASE = os.environ.get('API_BASE', default_api_base)
             self.ALERT_DOMAIN = os.environ.get('ALERT_DOMAIN', 'igwn.gwalert')
             self.OBSERVING_RUN = os.environ.get('OBSERVING_RUN', 'O4')
             self.KAFKA_CLIENT_ID = os.environ.get('KAFKA_CLIENT_ID', '')

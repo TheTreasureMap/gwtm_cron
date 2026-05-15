@@ -25,15 +25,15 @@ except ImportError:
     import gwstorage  # type: ignore
 
 class Writer():
-    
+
     def __init__(
             self,
             alert,
             s3path: str,
-            write_to_s3 = True
+            write_to_storage = True
         ):
 
-        self.write_to_s3 = write_to_s3
+        self.write_to_storage = write_to_storage
         self.s3path = s3path
 
         if isinstance(alert, bytes):
@@ -44,7 +44,7 @@ class Writer():
         self.path_info = None
         self.gwalert_dict: dict = {}
 
-        if not write_to_s3:
+        if not write_to_storage:
             paths = [
                 'saved_alerts',
                 'skymaps',
@@ -92,10 +92,9 @@ class Writer():
             print(f"Bad skymap URL! {self.gwalert_dict['skymap_fits_url']} Gracedb might be bogged")
             return
         
-        if self.write_to_s3:
-            storage_name = "S3" if config.STORAGE_BUCKET_SOURCE == "s3" else "Azure Blob Storage"
+        if self.write_to_storage:
             if verbose:
-                print(f'Writing skymap.fits.gz to {storage_name}')
+                print('Writing skymap.fits.gz to storage')
             downloadpath = '{}/{}.fits.gz'.format(self.s3path, self.path_info)
             gwstorage.upload_gwtm_file(r.content, downloadpath, source=config.STORAGE_BUCKET_SOURCE, config=config)
         else:
@@ -108,10 +107,9 @@ class Writer():
 
     def _write_skymap_moc(self, config: config.Config, verbose=False):
 
-        if self.write_to_s3:
-            storage_name = "S3" if config.STORAGE_BUCKET_SOURCE == "s3" else "Azure Blob Storage"
+        if self.write_to_storage:
             if verbose:
-                print(f'Writing skymap_moc.fits.gz to {storage_name}')
+                print('Writing skymap_moc.fits.gz to storage')
             downloadpath = '{}/{}_moc.fits.gz'.format(self.s3path, self.path_info)
             gwstorage.upload_gwtm_file(self.skymap, downloadpath, source=config.STORAGE_BUCKET_SOURCE, config=config)
         else:
@@ -156,10 +154,9 @@ class Writer():
             ]
         })
 
-        if self.write_to_s3:
-            storage_name = "S3" if config.STORAGE_BUCKET_SOURCE == "s3" else "Azure Blob Storage"
+        if self.write_to_storage:
             if verbose:
-                print(f'Writing contours to {storage_name}')
+                print('Writing contours to storage')
 
             contour_download_path = '{}/{}-contours-smooth.json'.format(self.s3path, self.path_info)
             gwstorage.upload_gwtm_file(contours_json.encode(), contour_download_path, config.STORAGE_BUCKET_SOURCE, config)
@@ -190,10 +187,9 @@ class Writer():
             print("Error in Fermi MOC creation")
             return
 
-        if self.write_to_s3:
-            storage_name = "S3" if config.STORAGE_BUCKET_SOURCE == "s3" else "Azure Blob Storage"
+        if self.write_to_storage:
             if verbose:
-                print(f'Writing Fermi contour to {storage_name}')
+                print('Writing Fermi contour to storage')
             fermi_moc_upload_path = '{}/{}-Fermi.json'.format(self.s3path, self.gwalert_dict["graceid"])
             dir_contents = gwstorage.list_gwtm_bucket(self.s3path, config.STORAGE_BUCKET_SOURCE, config)
             if fermi_moc_upload_path not in dir_contents:
@@ -205,7 +201,7 @@ class Writer():
                 if verbose:
                     print('Fermi File already exists')
                 return
-
+            
             if verbose:
                 print('Writing Fermi contour to local')
 
@@ -214,7 +210,7 @@ class Writer():
 
 
     def _write_LAT(self, config: config.Config, verbose=False):
-
+        
         if verbose:
             print('Calculating LAT contours')
 
@@ -230,10 +226,9 @@ class Writer():
             print("Error in LAT creation")
             return
 
-        if self.write_to_s3:
-            storage_name = "S3" if config.STORAGE_BUCKET_SOURCE == "s3" else "Azure Blob Storage"
+        if self.write_to_storage:
             if verbose:
-                print(f'Writing LAT contour to {storage_name}')
+                print('Writing LAT contour to storage')
 
             lat_moc_upload_path = '{}/{}-LAT.json'.format(self.s3path, self.gwalert_dict["graceid"])
             dir_contents = gwstorage.list_gwtm_bucket(self.s3path, config.STORAGE_BUCKET_SOURCE, config)
@@ -246,7 +241,7 @@ class Writer():
                 if verbose:
                     print('LAT File already exists')
                 return
-
+            
             if verbose:
                 print('Writing LAT contour to local')
 
@@ -256,14 +251,13 @@ class Writer():
 
     def write_alert_json(self, config: config.Config, verbose=False):
         '''
-            function that writes the alert json to s3 or local directory
+            function that writes the alert json to storage or local directory
         '''
 
 
-        if self.write_to_s3:
-            storage_name = "S3" if config.STORAGE_BUCKET_SOURCE == "s3" else "Azure Blob Storage"
+        if self.write_to_storage:
             if verbose:
-                print(f"Writing alert json to {storage_name}")
+                print("Writing alert json to storage")
 
             alert_upload_path = os.path.join(self.s3path, f"{self.path_info}_alert.json")
             dir_contents = gwstorage.list_gwtm_bucket(self.s3path, config.STORAGE_BUCKET_SOURCE, config)
@@ -279,16 +273,16 @@ class Writer():
 
 class Reader():
 
-    def __init__(self, read_from_s3=True):
-        self.read_from_s3 = read_from_s3
+    def __init__(self, read_from_storage=True):
+        self.read_from_storage = read_from_storage
 
     def read_alert_json(self, alert_path_name, config: config.Config, verbose=False):
         '''
-            function that reads the alert json or local directory
+            function that reads the alert json from storage or local directory
         '''
-        if self.read_from_s3:
+        if self.read_from_storage:
             if verbose:
-                print('Reading alert json from s3')
+                print('Reading alert json from storage')
             try:
                 f = gwstorage.download_gwtm_file(alert_path_name, config.STORAGE_BUCKET_SOURCE, config)
                 data = json.loads(f)

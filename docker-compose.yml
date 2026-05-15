@@ -1,17 +1,72 @@
 version: '3.8'
 
 services:
-  worker:
+  ligo-listener:
     build: .
-    command: python src/gwtm_cron/gwtm_listener/listener.py 
+    command: python docker/run_ligo_listener.py
+    restart: unless-stopped
     environment:
+      # AWS S3 Configuration
       - AWS_ACCESS_KEY_ID
       - AWS_SECRET_ACCESS_KEY
       - AWS_DEFAULT_REGION
       - AWS_BUCKET
+      # Azure Blob Storage Configuration (alternative to S3)
+      - AZURE_ACCOUNT_NAME
+      - AZURE_ACCOUNT_KEY
+      # OpenStack Swift Configuration (alternative to S3/Azure)
+      - OS_AUTH_URL
+      - OS_USERNAME
+      - OS_PASSWORD
+      - OS_PROJECT_NAME
+      - OS_USER_DOMAIN_NAME
+      - OS_PROJECT_DOMAIN_NAME
+      - OS_CONTAINER_NAME
+      # Storage backend: 's3' for AWS, 'abfs' for Azure, 'swift' for OpenStack
+      - STORAGE_BUCKET_SOURCE
+      # GWTM API Configuration
       - API_TOKEN
       - API_BASE
-      - ALERT_DOMAIN
-      - OBSERVING_RUN
+      # Kafka Configuration
       - KAFKA_CLIENT_ID
       - KAFKA_CLIENT_SECRET
+      - KAFKA_OFFSET_RESET  # 'latest' (default) or 'earliest' to replay buffered messages
+      - KAFKA_GROUP_ID  # Optional: set group ID for persistent offset tracking
+      # Observing Run Configuration
+      - OBSERVING_RUN
+      # Galaxy Catalog Configuration (optional, for galaxy list generation)
+      - PATH_TO_GALAXY_CATALOG_CONFIG
+
+  icecube-listener:
+    build: .
+    command: python docker/run_icecube_listener.py
+    restart: unless-stopped
+    environment:
+      # AWS S3 Configuration
+      - AWS_ACCESS_KEY_ID
+      - AWS_SECRET_ACCESS_KEY
+      - AWS_DEFAULT_REGION
+      - AWS_BUCKET
+      # Azure Blob Storage Configuration (alternative to S3)
+      - AZURE_ACCOUNT_NAME
+      - AZURE_ACCOUNT_KEY
+      # OpenStack Swift Configuration (alternative to S3/Azure)
+      - OS_AUTH_URL
+      - OS_USERNAME
+      - OS_PASSWORD
+      - OS_PROJECT_NAME
+      - OS_USER_DOMAIN_NAME
+      - OS_PROJECT_DOMAIN_NAME
+      - OS_CONTAINER_NAME
+      # Storage backend: 's3' for AWS, 'abfs' for Azure, 'swift' for OpenStack
+      - STORAGE_BUCKET_SOURCE
+      # GWTM API Configuration
+      - API_TOKEN
+      - API_BASE
+      # Kafka Configuration
+      - KAFKA_CLIENT_ID
+      - KAFKA_CLIENT_SECRET
+      - KAFKA_OFFSET_RESET  # 'latest' (default) or 'earliest' to replay buffered messages
+      - KAFKA_GROUP_ID  # Optional: set group ID for persistent offset tracking
+      # Observing Run Configuration
+      - OBSERVING_RUN

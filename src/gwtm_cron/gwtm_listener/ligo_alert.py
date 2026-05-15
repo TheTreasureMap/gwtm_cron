@@ -25,8 +25,8 @@ except ImportError:
 # from find_galaxies import EventLocalization,generate_galaxy_list
 
 
-def listen(config : config.Config, alert, write_to_s3=True, verbose=False, dry_run=False, alertname=None):
-        
+def listen(config : config.Config, alert, write_to_storage=True, verbose=False, dry_run=False, alertname=None):
+
     record = json.loads(alert)
 
     run_test = True
@@ -39,7 +39,7 @@ def listen(config : config.Config, alert, write_to_s3=True, verbose=False, dry_r
     writer = io.Writer(
         alert=alert,
         s3path=s3path,
-        write_to_s3=write_to_s3
+        write_to_storage=write_to_storage
     )
 
     gwa = {}
@@ -48,7 +48,7 @@ def listen(config : config.Config, alert, write_to_s3=True, verbose=False, dry_r
 
     alert_keys = record.keys()
     gwa.update({
-            "datecreated"       : datetime.datetime.now().strftime('"%Y-%m-%dT%H:%M:%S.%f"'),
+            "datecreated"       : datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S.%f'),
             "observing_run"     : config.OBSERVING_RUN,
             "description"       : "O4 Alert",
             "role"              : alert_role,
@@ -223,15 +223,15 @@ def listen(config : config.Config, alert, write_to_s3=True, verbose=False, dry_r
             #call delete before
             function.delete_galaxy_list(post_galaxies_json, config=config)
             function.post_galaxy_list(post_galaxies_json, config=config)
-        
+
         if ext_gwa is not None:
             ext_gwa = function.post_gwtm_alert(ext_gwa, config=config)
-    
-    if run_test:
-        function.del_test_alerts(config=config)
+
+        if run_test:
+            function.del_test_alerts(config=config)
 
     return gwa, ext_gwa
 
 if __name__ == '__main__':
     l = listener.Listener(listener_type="LIGO_ALERT")
-    l.run(write_to_s3=True, verbose=True, dry_run=False)
+    l.run(write_to_storage=True, verbose=True, dry_run=False)

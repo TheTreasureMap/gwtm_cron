@@ -28,61 +28,65 @@ except ImportError:
 def query_gwtm_alerts(graceid, alert_type, config: config.Config):
     base = config.API_BASE
     target = "query_alerts"
+    headers = {
+        "api_token": config.API_TOKEN
+    }
     params = {
         "graceid" : graceid,
-        "alert_type" : alert_type,
-        "api_token" : config.API_TOKEN
+        "alert_type" : alert_type
     }
-    r = requests.get(f"{base}{target}", json=params)
+    r = requests.get(f"{base}{target}", headers=headers, params=params)
     if r.status_code == 200:
         return json.loads(r.text)
     else:
-        raise Exception(f"Bad api request: f{r.text}")
+        raise Exception(f"Bad api request: {r.text}")
 
 
 def post_gwtm_alert(gwa, config: config.Config):
     base = config.API_BASE
     target = "post_alert"
+    headers = {
+        "Content-Type": "application/json",
+        "api_token": config.API_TOKEN
+    }
     params = gwa
-    params.update({
-        'api_token' : config.API_TOKEN
-    })
-    
-    r = requests.post(f"{base}{target}", json=params)
+
+    r = requests.post(f"{base}{target}", headers=headers, json=params)
     if r.status_code == 200:
         return json.loads(r.text)
     else:
-        raise Exception(f"Bad api request: f{r.text}")
+        raise Exception(f"Bad api request: {r.text}")
 
 #post the galaxy list
 def post_galaxy_list(galaxies,config: config.Config):
     base = config.API_BASE
     target = "event_galaxies"
+    headers = {
+        "Content-Type": "application/json",
+        "api_token": config.API_TOKEN
+    }
     params = galaxies
-    params.update({
-        'api_token' : config.API_TOKEN
-    })
-    
-    r = requests.post(f"{base}{target}", json=params)
+
+    r = requests.post(f"{base}{target}", headers=headers, json=params)
     print("INFO: Successfully posted galaxy list")
     if r.status_code == 200:
         return
     else:
-        raise Exception(f"Bad api request: f{r.text}")
+        raise Exception(f"Bad api request: {r.text}")
 
 
 def delete_galaxy_list(galaxies,config: config.Config):
     base = config.API_BASE
     target = "event_galaxies"
+    headers = {
+        "api_token": config.API_TOKEN
+    }
 
     params = {
         'groupname' : galaxies['groupname'],
         'graceid' : galaxies['graceid'],
     }
-    params.update({
-        'api_token' : config.API_TOKEN
-    })
-    r_get = requests.get(f"{base}{target}", json=params)
+    r_get = requests.get(f"{base}{target}", headers=headers, params=params)
 
     if r_get.status_code == 200:
         gal_list = json.loads(r_get.text)
@@ -91,11 +95,10 @@ def delete_galaxy_list(galaxies,config: config.Config):
         else:
             target_remove = 'remove_event_galaxies'
             del_params = {
-                'listid':gal_list[0]['listid'],
-                'api_token':config.API_TOKEN
+                'listid':gal_list[0]['listid']
             }
 
-            r_post = requests.post(f"{base}{target_remove}", json=del_params) 
+            r_post = requests.delete(f"{base}{target_remove}", headers=headers, params=del_params)
             print("INFO: Successfully deleted galaxy list")
 
             if r_post.status_code == 200:
@@ -110,30 +113,40 @@ def delete_galaxy_list(galaxies,config: config.Config):
 def post_icecube_notice(notice, events, config: config.Config):
     base = config.API_BASE
     target = "post_icecube_notice"
+    headers = {
+        "Content-Type": "application/json",
+        "api_token": config.API_TOKEN
+    }
     params = {
-        "api_token"                   : config.API_TOKEN,
-        "icecube_notice"              : notice,
-        "icecube_notice_coinc_events" : events
+        "notice_data": notice,
+        "events_data": events
     }
 
-    r = requests.post(f"{base}{target}", json=params)
+    print(f"DEBUG: Posting to {base}{target}")
+    print(f"DEBUG: notice_data keys: {list(notice.keys())}")
+    print(f"DEBUG: events_data length: {len(events)}")
+    print(f"DEBUG: Full params: {json.dumps(params, indent=2)}")
+
+    r = requests.post(f"{base}{target}", headers=headers, json=params)
     if r.status_code == 200:
         return json.loads(r.text)
     else:
-        raise Exception(f"Bad api request: f{r.text}")
+        raise Exception(f"Bad api request: {r.text}")
 
  
 def del_test_alerts(config: config.Config):
     base = config.API_BASE
     target = "del_test_alerts"
-    params = {
-        'api_token':config.API_TOKEN
+    headers = {
+        "Content-Type": "application/json",
+        "api_token": config.API_TOKEN
     }
-    r = requests.post(f"{base}{target}", json=params)
+    params = {}
+    r = requests.post(f"{base}{target}", headers=headers, json=params)
     if r.status_code == 200:
         return r
     else:
-        raise Exception(f"Bad api request: f{r.text}")
+        raise Exception(f"Bad api request: {r.text}")
 
 
 def get_packet_type(alert_type):

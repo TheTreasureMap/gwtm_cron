@@ -1,8 +1,19 @@
-FROM python:3.10
+FROM python:3.11-slim
 
 WORKDIR /app
 
-ENV PYTHONBUFFERED 1
+ENV PYTHONUNBUFFERED=1
+
+# Install system dependencies for SSL certificates
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends ca-certificates && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Create symlink for RedHat-style certificate path (required by librdkafka OIDC)
+# librdkafka's OIDC token retrieval looks for /etc/pki/tls/certs/ca-bundle.crt
+RUN mkdir -p /etc/pki/tls/certs && \
+    ln -s /etc/ssl/certs/ca-certificates.crt /etc/pki/tls/certs/ca-bundle.crt
 
 RUN pip install --upgrade pip
 COPY ./requirements.txt /app
@@ -10,4 +21,9 @@ RUN pip install -r requirements.txt
 
 COPY . /app
 
-CMD ["python", "src/gwtm_cron/gwtm_listener/listener.py"]
+# Install the gwtm_cron package
+RUN pip install -e .
+
+RUN chmod +x docker/start_ligo_listener.sh
+
+CMD ["bash", "docker/start_ligo_listener.sh"]
