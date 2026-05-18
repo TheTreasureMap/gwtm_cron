@@ -57,7 +57,9 @@ class Listener():
         self.config = config.Config(path_to_config=config_path)
 
         # Build consumer config - let gcn_kafka handle security, just specify IPv4 and offset
-        consumer_config = {'broker.address.family': 'v4'}
+        # max.poll.interval.ms: alert processing (skymap contours, galaxy list, uploads) can
+        # exceed the 300s default, causing Kafka to evict the consumer from the group.
+        consumer_config = {'broker.address.family': 'v4', 'max.poll.interval.ms': 900000}
 
         # KAFKA_OFFSET_RESET controls where to start reading from:
         # - 'latest' (default): Only new messages arriving after consumer starts
