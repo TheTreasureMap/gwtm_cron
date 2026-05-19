@@ -125,11 +125,13 @@ class Writer():
         if verbose:
             print('Calculating 90/50 contours')
 
-        tmp = tempfile.NamedTemporaryFile()
-        with open(tmp.name, 'wb') as f:
-            f.write(self.skymap)  #type: ignore
-
-        prob, _ = ligo.skymap.io.fits.read_sky_map(tmp.name, nest=None)
+        with tempfile.NamedTemporaryFile(suffix='.fits.gz', delete=False) as tmp:
+            tmp.write(self.skymap)  #type: ignore
+            tmp_path = tmp.name
+        try:
+            prob, _ = ligo.skymap.io.fits.read_sky_map(tmp_path, nest=None)
+        finally:
+            os.unlink(tmp_path)
         prob = interpolate_nested(prob, nest=True)
         i = np.flipud(np.argsort(prob))
         cumsum = np.cumsum(prob[i])
