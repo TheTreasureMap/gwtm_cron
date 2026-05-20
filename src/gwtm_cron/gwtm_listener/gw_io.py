@@ -129,15 +129,18 @@ class Writer():
             tmp.write(self.skymap)  #type: ignore
             tmp_path = tmp.name
         try:
-            prob, _ = ligo.skymap.io.fits.read_sky_map(tmp_path, nest=None)
+            pixel_prob, _ = ligo.skymap.io.fits.read_sky_map(tmp_path, nest=None)
         finally:
             os.unlink(tmp_path)
-        prob = interpolate_nested(prob, nest=True)
-        i = np.flipud(np.argsort(prob))
-        cumsum = np.cumsum(prob[i])
-        cls = np.empty_like(prob)
-        cls[i] = cumsum * 100
-        paths = list(ligo.skymap.postprocess.contour(cls, [50, 90], nest=True, degrees=True, simplify=True))
+        pixel_prob = interpolate_nested(pixel_prob, nest=True)
+        sorted_indices = np.flipud(np.argsort(pixel_prob))
+        cumulative_prob = np.cumsum(pixel_prob[sorted_indices])
+        credible_level = np.empty_like(pixel_prob)
+        del pixel_prob
+        credible_level[sorted_indices] = cumulative_prob * 100
+        del sorted_indices, cumulative_prob
+        contour_paths = list(ligo.skymap.postprocess.contour(credible_level, [50, 90], nest=True, degrees=True, simplify=True))
+        del credible_level
 
         contours_json = json.dumps({
             'type': 'FeatureCollection',
@@ -152,7 +155,7 @@ class Writer():
                         'coordinates': path
                     }
                 }
-                for contour, path in zip([50,90], paths)
+                for contour, path in zip([50, 90], contour_paths)
             ]
         })
 
