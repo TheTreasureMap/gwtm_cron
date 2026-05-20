@@ -133,7 +133,8 @@ class Writer():
         finally:
             os.unlink(tmp_path)
         pixel_prob = interpolate_nested(pixel_prob, nest=True)
-        sorted_indices = np.flipud(np.argsort(pixel_prob))
+        assert pixel_prob.size <= np.iinfo(np.int32).max, f"Skymap too large for int32 indexing: {pixel_prob.size} pixels"
+        sorted_indices = np.flipud(np.argsort(pixel_prob).astype(np.int32))
         cumulative_prob = np.cumsum(pixel_prob[sorted_indices])
         credible_level = np.empty_like(pixel_prob)
         del pixel_prob
