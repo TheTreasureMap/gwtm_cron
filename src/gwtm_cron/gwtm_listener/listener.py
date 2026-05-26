@@ -56,6 +56,14 @@ class Listener():
 
         self.config = config.Config(path_to_config=config_path)
 
+        self.galaxy_catalog = None
+        if listener_type == "LIGO_ALERT" and self.config.PATH_TO_GALAXY_CATALOG_CONFIG:
+            try:
+                from . import find_galaxies as fg
+                self.galaxy_catalog = fg.load_galaxy_catalog(self.config.PATH_TO_GALAXY_CATALOG_CONFIG)
+            except Exception as e:
+                print(f"WARNING: Failed to pre-load galaxy catalog, will load per-alert: {e}")
+
         # Build consumer config - let gcn_kafka handle security, just specify IPv4 and offset
         # max.poll.interval.ms: alert processing (skymap contours, galaxy list, uploads) can
         # exceed the 300s default, causing Kafka to evict the consumer from the group.
@@ -111,6 +119,8 @@ class Listener():
 
     def _listen(self, alert, write_to_storage, verbose, dry_run, alertname=None):
         listener_function = LISTENER_TYPES[self.listener_type]["func"]
+        if self.listener_type == "LIGO_ALERT":
+            return listener_function(self.config, alert, write_to_storage, verbose, dry_run, alertname, galaxy_catalog=self.galaxy_catalog)
         return listener_function(self.config, alert, write_to_storage, verbose, dry_run, alertname)
 
 

@@ -1,3 +1,4 @@
+import gc
 import healpy as hp #  type: ignore[import]
 import numpy as np
 from astropy.table import Table #  type: ignore[import]
@@ -19,7 +20,19 @@ class EventLocalization(object):
 
 
 
-def generate_galaxy_list(eventlocalization: EventLocalization, galaxy_config_path: str, completeness=None, credzone=None, skymap_filepath=None):
+def load_galaxy_catalog(galaxy_config_path: str) -> 'Table':
+    """Load and pre-filter the galaxy catalog. Call once at startup to avoid reloading on every alert."""
+    galaxy_config = ConfigParser(inline_comment_prefixes=';')
+    galaxy_config.read(galaxy_config_path)
+    catalog_path = galaxy_config.get('GALAXIES', 'CATALOG_PATH')
+    print('INFO: Loading Galaxy Catalog')
+    galaxies = Table.read(catalog_path)
+    galaxies = galaxies[~np.isnan(galaxies['Mstar'])]
+    galaxies = galaxies[np.where(galaxies['DistMpc'] > 0)]
+    return galaxies
+
+
+def generate_galaxy_list(eventlocalization: EventLocalization, galaxy_config_path: str, completeness=None, credzone=None, skymap_filepath=None, preloaded_catalog=None):
     """
     An adaptation of the galaxy ranking algorithm described in
     Arcavi et al. 2017 (doi:10.3847/2041-8213/aa910f)
@@ -80,15 +93,10 @@ def generate_galaxy_list(eventlocalization: EventLocalization, galaxy_config_pat
     npix = len(prob)
     nside = hp.npix2nside(npix)
 
-    # Load the galaxy catalog.
-    print('INFO: Loading Galaxy Catalog')
-    galaxies = Table.read(catalog_path)
-
-    ### If using luminosity, remove galaxies with no Lum_X, like so:q
-    #galaxies = galaxies[~np.isnan(galaxies['Lum_W1'])]
-    ### If using mass, make cuts on DistMpc and Mstar
-    galaxies = galaxies[~np.isnan(galaxies['Mstar'])]
-    galaxies = galaxies[np.where(galaxies['DistMpc']>0)] # Remove galaxies with distance < 0
+    if preloaded_catalog is not None:
+        galaxies = preloaded_catalog
+    else:
+        galaxies = load_galaxy_catalog(galaxy_config_path)
 
     theta = 0.5 * np.pi - np.pi*(galaxies['dec'])/180
     phi = np.deg2rad(galaxies['ra'])

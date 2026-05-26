@@ -25,7 +25,7 @@ except ImportError:
 # from find_galaxies import EventLocalization,generate_galaxy_list
 
 
-def listen(config : config.Config, alert, write_to_storage=True, verbose=False, dry_run=False, alertname=None):
+def listen(config : config.Config, alert, write_to_storage=True, verbose=False, dry_run=False, alertname=None, galaxy_catalog=None):
 
     record = json.loads(alert)
 
@@ -155,7 +155,7 @@ def listen(config : config.Config, alert, write_to_storage=True, verbose=False, 
                 # create EventLocatlization object to be passed into the galaxies list
                 gwa_obj = fg.EventLocalization(gwa)
                 #makes galaxy list, posts to API
-                post_galaxies_json = fg.generate_galaxy_list(gwa_obj, galaxy_config_path=config.PATH_TO_GALAXY_CATALOG_CONFIG)
+                post_galaxies_json = fg.generate_galaxy_list(gwa_obj, galaxy_config_path=config.PATH_TO_GALAXY_CATALOG_CONFIG, preloaded_catalog=galaxy_catalog)
                 
             except Exception as e:
                 print(e)
