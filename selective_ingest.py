@@ -223,7 +223,7 @@ def ingest_filtered(config_path, listener_type, filter_string, write_to_s3=False
                         # Process the alert
                         alert, ext_alert = l._listen(
                             alert=message.value(),
-                            write_to_s3=write_to_s3,
+                            write_to_storage=write_to_s3,
                             verbose=True,
                             dry_run=dry_run
                         )
@@ -394,7 +394,7 @@ def ingest_from_gracedb(config_path, superevent_ids, alert_types=None,
                 # Process the alert through the listener
                 alert, ext_alert = l._listen(
                     alert=alert_json,
-                    write_to_s3=write_to_s3,
+                    write_to_storage=write_to_s3,
                     verbose=True,
                     dry_run=dry_run
                 )
