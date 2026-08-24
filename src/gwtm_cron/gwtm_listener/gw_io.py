@@ -83,13 +83,22 @@ class Writer():
 
 
     def _write_skymap(self, config: config.Config, verbose=False):
+        skymap_url = self.gwalert_dict.get('skymap_fits_url')
+
+        if not skymap_url or skymap_url == function.INVALID_SKYMAP_URL:
+            print(f"No sky map URL for {self.path_info}, skipping sky map download")
+            return
+
         if verbose:
             print('Downloading skymap_fits_url')
 
         try:
-            r = requests.get(self.gwalert_dict['skymap_fits_url'])
-        except Exception:
-            print(f"Bad skymap URL! {self.gwalert_dict['skymap_fits_url']} Gracedb might be bogged")
+            r = requests.get(skymap_url, timeout=120)
+            # Don't upload an error page as a .fits.gz
+            if r.status_code != 200:
+                raise Exception(f"{r.status_code} {r.text[:200]}")
+        except Exception as e:
+            print(f"Bad skymap URL! {skymap_url}: {e} Gracedb might be bogged")
             return
         
         if self.write_to_storage:

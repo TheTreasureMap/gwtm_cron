@@ -24,7 +24,45 @@ except ImportError:
     listener functions
 '''
 
-    
+GRACEDB_API_BASE = "https://gracedb.ligo.org/api"
+
+# Pipelines and file types, each most preferred first. GraceDB's filename
+# casing is inconsistent (Bilby.fits.gz, bayestar.fits.gz), so these are
+# matched case insensitively.
+GRACEDB_SKYMAP_PIPELINES = ["cwb", "bilby", "bayestar"]
+GRACEDB_SKYMAP_SUFFIXES = [".fits.gz", ".multiorder.fits"]
+
+INVALID_SKYMAP_URL = "Invalid.Sky.Map.URL"
+
+
+def get_gracedb_skymap_url(graceid, gracedb_api_base=GRACEDB_API_BASE):
+    """Return the URL of the best available sky map for a superevent, or
+    INVALID_SKYMAP_URL if there is none, which callers treat as "skip the
+    download".
+    """
+    try:
+        r = requests.get(f"{gracedb_api_base}/superevents/{graceid}/files/", timeout=60)
+        if r.status_code != 200:
+            raise Exception(f"{r.status_code} {r.text[:200]}")
+        gracedb_files = r.json()
+    except Exception as e:
+        print(f"WARNING: Could not list GraceDB files for {graceid}: {e}")
+        return INVALID_SKYMAP_URL
+
+    # A comma in the key marks a specific revision ('bayestar.fits.gz,0');
+    # the bare filename points at the latest.
+    latest_files = {k.lower(): v for k, v in gracedb_files.items() if ',' not in k}
+
+    for pipeline in GRACEDB_SKYMAP_PIPELINES:
+        for suffix in GRACEDB_SKYMAP_SUFFIXES:
+            skymap_url = latest_files.get(f"{pipeline}{suffix}")
+            if skymap_url:
+                return skymap_url
+
+    print(f"WARNING: No sky map found on GraceDB for {graceid}")
+    return INVALID_SKYMAP_URL
+
+
 def query_gwtm_alerts(graceid, alert_type, config: config.Config):
     base = config.API_BASE
     target = "query_alerts"

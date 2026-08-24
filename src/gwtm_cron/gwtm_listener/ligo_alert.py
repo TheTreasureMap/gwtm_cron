@@ -1,6 +1,5 @@
 import json
 import datetime
-import requests # type: ignore
 
 
 from base64 import b64decode
@@ -123,17 +122,7 @@ def listen(config : config.Config, alert, write_to_storage=True, verbose=False, 
             header = skymap.meta
             header_keys = header.keys()
 
-            #This is dumb
-            skymap_url = None
-            map_files = ["cWB.fits.gz", "bilby.fits.gz", "bayestar.fits.gz"]
-            for mf in map_files:
-                mf_url = f"https://gracedb.ligo.org/api/superevents/{gwa['graceid']}/files/{mf}"
-                mf_r = requests.head(mf_url)
-                if mf_r.status_code == 200:
-                    skymap_url = mf_url
-                    break
-            if skymap_url is None:
-                skymap_url = "Invalid.Sky.Map.URL"
+            skymap_url = function.get_gracedb_skymap_url(gwa['graceid'])
 
             gwa.update({
                 "skymap_fits_url" : skymap_url,
